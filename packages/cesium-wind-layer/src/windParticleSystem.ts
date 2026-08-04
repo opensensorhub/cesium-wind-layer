@@ -45,6 +45,12 @@ export class WindParticleSystem {
     });
   }
 
+  clearParticles() {
+    this.computing.destroyParticlesTextures();
+    this.clearFramebuffers()
+    this.computing.createParticlesTextures();
+  }
+
   changeOptions(options: Partial<WindLayerOptions>) {
     let maxParticlesChanged = false;
     if (options.particlesTextureSize && this.options.particlesTextureSize !== options.particlesTextureSize) {

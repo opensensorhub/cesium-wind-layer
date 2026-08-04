@@ -31,25 +31,74 @@ float rand(vec2 seed, vec2 range) {
     return temp * (range.y - range.x) + range.x;
 }
 
+float randomLongitude(vec2 seed, vec2 range)
+{
+    float r = rand(seed, vec2(0.0, 1.0));
+
+    if (range.x <= range.y) {
+        return mix(range.x, range.y, r);
+    }
+
+    // crosses antimeridian
+    float lon = mix(range.x, range.y + 360.0, r);
+
+    if (lon > 180.0) {
+        lon -= 360.0;
+    }
+
+    return lon;
+}
+
 vec2 generateRandomParticle(vec2 seed) {
     vec2 range;
     float randomLon, randomLat;
     
     if (useViewerBounds) {
         // 在当前视域范围内生成粒子
-        randomLon = rand(seed, lonRange);
+        randomLon = randomLongitude(seed, lonRange);
         randomLat = rand(-seed, latRange);
     } else {
         // 在数据范围内生成粒子
-        randomLon = rand(seed, dataLonRange);
+        randomLon = randomLongitude(seed, dataLonRange);
         randomLat = rand(-seed, dataLatRange);
     }
 
     return vec2(randomLon, randomLat);
 }
 
-bool particleOutbound(vec2 particle) {
-    return particle.y < dataLatRange.x || particle.y > dataLatRange.y || particle.x < dataLonRange.x || particle.x > dataLonRange.y;
+bool longitudeOutside(float lon, float west, float east)
+{
+    if (west <= east) {
+        return lon < west || lon > east;
+    }
+
+    // crosses antimeridian
+    return lon < west && lon > east;
+}
+
+
+bool particleOutbound(vec2 particle)
+{
+    float minLat;
+    float maxLat;
+    float minLon;
+    float maxLon;
+
+    if (useViewerBounds) {
+        minLat = latRange.x;
+        maxLat = latRange.y;
+        minLon = lonRange.x;
+        maxLon = lonRange.y;
+    } else {
+        minLat = dataLatRange.x;
+        maxLat = dataLatRange.y;
+        minLon = dataLonRange.x;
+        maxLon = dataLonRange.y;
+    }
+
+    return particle.y < minLat ||
+           particle.y > maxLat ||
+           longitudeOutside(particle.x, minLon, maxLon);
 }
 
 out vec4 fragColor;
@@ -62,10 +111,11 @@ void main() {
 
     vec2 seed1 = nextParticle.xy + v_textureCoordinates;
     vec2 seed2 = nextSpeed.rg + v_textureCoordinates;
-    vec2 randomParticle = generateRandomParticle(seed1);
+    
     float randomNumber = rand(seed2, normalRange);
 
     if (randomNumber < particleDropRate || particleOutbound(nextParticle)) {
+        vec2 randomParticle = generateRandomParticle(seed1);
         fragColor = vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
     } else {
         fragColor = vec4(nextParticle, 0.0, 0.0);

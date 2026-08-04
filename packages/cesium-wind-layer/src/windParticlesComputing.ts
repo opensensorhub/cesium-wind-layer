@@ -1,4 +1,4 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
@@ -186,14 +186,14 @@ export class WindParticlesComputing {
         },
         isDynamic: () => this.options.dynamic
       }),
-
+      
       postProcessingPosition: new CustomPrimitive({
         commandType: 'Compute',
         uniformMap: {
           nextParticlesPosition: () => this.particlesTextures.nextParticlesPosition,
           particlesSpeed: () => this.particlesTextures.particlesSpeed,
-          lonRange: () => this.viewerParameters.lonRange,
-          latRange: () => this.viewerParameters.latRange,
+          lonRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.west), CesiumMath.toDegrees(this.viewerParameters.viewBounds.east)),
+          latRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.south), CesiumMath.toDegrees(this.viewerParameters.viewBounds.north)),
           dataLonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           dataLatRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
           randomCoefficient: function () {
