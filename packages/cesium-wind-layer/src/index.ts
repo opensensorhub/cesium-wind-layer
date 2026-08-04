@@ -270,10 +270,17 @@ export class WindLayer {
         const eastR = screenBounds.clone()
         eastR.west = -CesiumMath.PI
         
-        const westI = Rectangle.intersection(westR, dataBounds) ?? new Rectangle()
-        const eastI = Rectangle.intersection(eastR, dataBounds) ?? new Rectangle()
+        const westI = Rectangle.intersection(westR, dataBounds)
+        const eastI = Rectangle.intersection(eastR, dataBounds)
 
-        viewBounds = new Rectangle(westI.west, screenBounds.south, eastI.east, screenBounds.north)
+        // for west, if no intersection with west rect, check the east rect
+        // vice versa for east value
+        //if no intersection with either, 0
+        //for north south, take first non-null value, otherwise 0
+        viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
+          westI ? westI.south : eastI ? eastI.south : 0,
+          eastI ? eastI.east : westI ? westI.east : 0, 
+          westI ? westI.north : eastI ? eastI.north : 0)
 
       } else {
         viewBounds = Rectangle.intersection(screenBounds, dataBounds);
