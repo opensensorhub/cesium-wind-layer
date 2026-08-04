@@ -258,9 +258,27 @@ export class WindLayer {
     .filter(val => val != undefined);
 
     if(viewBoundsSamples.length >= 4) {
-      viewBounds = Rectangle.intersection(Rectangle.fromCartesianArray(viewBoundsSamples), 
-      new Rectangle(CesiumMath.toRadians(this.windData.bounds.west), CesiumMath.toRadians(this.windData.bounds.south), CesiumMath.toRadians(this.windData.bounds.east), CesiumMath.toRadians(this.windData.bounds.north)));
-      console.debug(viewBounds)
+      const screenBounds = Rectangle.fromCartesianArray(viewBoundsSamples)
+      const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north)
+
+      //bug with Rectangle.intersection when crossing antimeridian
+      //workaround is to separate rectangles west and east of antimeridian, perform 2 intersections and rejoin
+      //https://github.com/CesiumGS/cesium/issues/2195
+      if(screenBounds.west > screenBounds.east) {
+        const westR = screenBounds.clone()
+        westR.east = CesiumMath.PI
+        const eastR = screenBounds.clone()
+        eastR.west = -CesiumMath.PI
+        
+        const westI = Rectangle.intersection(westR, dataBounds) ?? new Rectangle()
+        const eastI = Rectangle.intersection(eastR, dataBounds) ?? new Rectangle()
+
+        viewBounds = new Rectangle(westI.west, screenBounds.south, eastI.east, screenBounds.north)
+
+      } else {
+        viewBounds = Rectangle.intersection(screenBounds, dataBounds);
+      }
+      
     }
 
     //changed bounds
