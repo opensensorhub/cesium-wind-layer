@@ -96,6 +96,11 @@ bool particleOutbound(vec2 particle) {
         maxLon = dataLonRange.y;
     }
 
+    //total wrap, particle is never outbound
+    if(abs(minLon) + abs(maxLon) == 360.0) {
+        return false;
+    }
+
     return particle.y < minLat ||
            particle.y > maxLat ||
            longitudeOutside(particle.x, minLon, maxLon);
