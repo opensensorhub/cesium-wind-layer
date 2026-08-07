@@ -69,11 +69,11 @@ vec2 generateRandomParticle(vec2 seed) {
 
 bool longitudeOutside(float lon, float west, float east) {
     if (west <= east) {
-        return lon < west || lon > east;
+        return (lon < west || lon > east) && east - west != 360.0;
     }
 
     // crosses antimeridian
-    return lon < west && lon > east;
+    return lon < west && lon > east && east - west + 360.0 != 360.0;
 }
 
 
@@ -94,11 +94,6 @@ bool particleOutbound(vec2 particle) {
         maxLat = dataLatRange.y;
         minLon = dataLonRange.x;
         maxLon = dataLonRange.y;
-    }
-
-    //total wrap, particle is never outbound
-    if(abs(minLon) + abs(maxLon) == 360.0) {
-        return false;
     }
 
     return particle.y < minLat ||
