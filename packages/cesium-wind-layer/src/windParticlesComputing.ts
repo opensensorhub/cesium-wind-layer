@@ -1,4 +1,4 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
@@ -18,11 +18,14 @@ export class WindParticlesComputing {
     nextParticlesPosition: Texture;
     postProcessingPosition: Texture;
     particlesSpeed: Texture;
+    particlesGenTime: Texture;
+    prevParticlesGenTime: Texture;
   };
   primitives!: {
     calculateSpeed: CustomPrimitive;
     updatePosition: CustomPrimitive;
     postProcessingPosition: CustomPrimitive;
+    calculateGenTime: CustomPrimitive;
   };
   windData: Required<WindData>;
   private frameRateMonitor: FrameRateMonitor;
@@ -130,7 +133,9 @@ export class WindParticlesComputing {
       currentParticlesPosition: new Texture(options),
       nextParticlesPosition: new Texture(options),
       postProcessingPosition: new Texture(options),
-      particlesSpeed: new Texture(options)
+      particlesSpeed: new Texture(options),
+      particlesGenTime: new Texture(options),
+      prevParticlesGenTime: new Texture(options)
     };
   }
 
@@ -192,6 +197,8 @@ export class WindParticlesComputing {
         uniformMap: {
           nextParticlesPosition: () => this.particlesTextures.nextParticlesPosition,
           particlesSpeed: () => this.particlesTextures.particlesSpeed,
+          particlesGenTime: () => this.particlesTextures.particlesGenTime,
+          currentTime: () => performance.now(),
           lonRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.west), CesiumMath.toDegrees(this.viewerParameters.viewBounds.east)),
           latRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.south), CesiumMath.toDegrees(this.viewerParameters.viewBounds.north)),
           dataLonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
@@ -199,8 +206,6 @@ export class WindParticlesComputing {
           randomCoefficient: function () {
             return Math.random();
           },
-          dropRate: () => this.options.dropRate,
-          dropRateBump: () => this.options.dropRateBump,
           useViewerBounds: () => this.options.useViewerBounds
         },
         fragmentShaderSource: ShaderManager.getPostProcessingPositionShader(),
@@ -211,7 +216,29 @@ export class WindParticlesComputing {
           }
         },
         isDynamic: () => this.options.dynamic
-      })
+      }),
+
+      calculateGenTime: new CustomPrimitive({
+        commandType: 'Compute',
+        uniformMap: {
+          currentParticlesPosition: () => this.particlesTextures.currentParticlesPosition,
+          prevParticlesGenTime: () => this.particlesTextures.prevParticlesGenTime,
+          currentTime: () => performance.now(),
+          particleLifeTime: () => this.options.particleLifeTime,
+          randomCoefficient: () => Math.random()
+        },
+        fragmentShaderSource: ShaderManager.getCalculateGenTimeShader(),
+        outputTexture: this.particlesTextures.particlesGenTime,
+        isDynamic: () => this.options.dynamic,
+        preExecute: () => {
+          const temp = this.particlesTextures.prevParticlesGenTime;
+          this.particlesTextures.prevParticlesGenTime = this.particlesTextures.particlesGenTime;
+          this.particlesTextures.particlesGenTime = temp;
+          if (this.primitives.calculateGenTime.commandToExecute) {
+            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.particlesGenTime;
+          }
+        },
+      }),
     };
   }
 

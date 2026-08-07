@@ -3,6 +3,7 @@ import { updatePositionShader } from './shaders/updatePosition';
 import { calculateSpeedShader } from './shaders/calculateSpeed';
 import { postProcessingPositionFragmentShader } from './shaders/postProcessingPosition';
 import { renderParticlesFragmentShader, renderParticlesVertexShader } from './shaders/segmentDraw';
+import { calculateGenTimeShader } from './shaders/calculateGenTime'
 
 export class ShaderManager {
   static getCalculateSpeedShader(): ShaderSource {
@@ -32,6 +33,12 @@ export class ShaderManager {
   static getPostProcessingPositionShader(): ShaderSource {
     return new ShaderSource({
       sources: [postProcessingPositionFragmentShader]
+    });
+  }
+
+  static getCalculateGenTimeShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [calculateGenTimeShader]
     });
   }
 

@@ -8,7 +8,11 @@ uniform sampler2D previousParticlesPosition;
 uniform sampler2D currentParticlesPosition;
 uniform sampler2D postProcessingPosition;
 uniform sampler2D particlesSpeed;
+uniform sampler2D particlesGenTime;
 
+uniform float currentTime;
+uniform float particleFadeInTime;
+uniform float particleFadeOutTime;
 uniform float frameRateAdjustment;
 uniform float particleHeight;
 uniform float aspect;
@@ -22,6 +26,7 @@ uniform bool is3D;
 out vec4 speed;
 out float v_segmentPosition;
 out vec2 textureCoordinate;
+out float timeAlpha;
 
 // 添加结构体定义
 struct adjacentPoints {
@@ -29,6 +34,26 @@ struct adjacentPoints {
     vec4 current;
     vec4 next;
 };
+
+//https://en.wikipedia.org/wiki/Hann_function
+//https://www.desmos.com/calculator/ar8uhyf9ir
+float fadeIn(float x, float L, float f0) {
+    return 0.5 - (0.5 * cos((czm_pi*x)/f0));
+}
+
+float fadeOut(float x, float L, float f1) {
+    return 0.5 - (0.5 * cos(((czm_pi*x)/f1) - ((czm_pi*(L-(2.0*f1)))/f1)));
+}
+
+float hannFade(float x, float f0, float f1, float L) {
+    if (x <= f0) {
+        return fadeIn(x, L, f0);
+    } else if (x <=  L - f1) {
+        return 1.0;
+    } else {
+        return fadeOut(x, L, f1);
+    }
+}
 
 vec3 convertCoordinate(vec2 lonLat) {
     // WGS84 (lon, lat, lev) -> ECEF (x, y, z)
@@ -155,6 +180,11 @@ void main() {
     }
 
     textureCoordinate = st;
+
+    vec2 particleGenTime = texture(particlesGenTime, particleIndex).rg;
+
+    float delta = currentTime - particleGenTime.x;
+    timeAlpha = hannFade(delta, particleFadeInTime, particleFadeOutTime, particleGenTime.y);
 }
 `;
 
@@ -164,6 +194,7 @@ precision highp float;
 in vec4 speed;
 in float v_segmentPosition;
 in vec2 textureCoordinate;
+in float timeAlpha;
 
 uniform vec2 domain;
 uniform vec2 displayRange;
@@ -187,7 +218,7 @@ void main() {
         float speedAlpha = mix(0.3, 1.0, speed.a);
 
         // 组合颜色和透明度
-        fragColor = vec4(baseColor.rgb, baseColor.a * alpha * speedAlpha);
+        fragColor = vec4(baseColor.rgb, baseColor.a * alpha * speedAlpha * timeAlpha);
     } else {
         fragColor = vec4(zero);
     }

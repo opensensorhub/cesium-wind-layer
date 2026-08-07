@@ -426,26 +426,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </CompactFormItem>
 
               <CompactFormItem
-                name="dropRate"
-                label={renderLabel(
-                  'Drop Rate',
-                  'Rate at which particles are dropped (reset). Controls the lifecycle of particles.'
-                )}
-              >
-                <NumberInput min={0.001} max={0.01} step={0.001} precision={3} />
-              </CompactFormItem>
-
-              <CompactFormItem
-                name="dropRateBump"
-                label={renderLabel(
-                  'Drop Rate Bump',
-                  'Additional drop rate for slow-moving particles. Increases the probability of dropping particles when they move slowly.'
-                )}
-              >
-                <NumberInput min={0} max={0.2} step={0.001} precision={3} />
-              </CompactFormItem>
-
-              <CompactFormItem
                 name="colors"
                 label={renderLabel(
                   'Color Scheme',

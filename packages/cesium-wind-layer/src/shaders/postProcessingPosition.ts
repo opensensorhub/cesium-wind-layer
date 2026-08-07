@@ -2,6 +2,7 @@ export const postProcessingPositionFragmentShader = /*glsl*/`#version 300 es
 precision highp float;
 
 uniform sampler2D nextParticlesPosition;
+uniform sampler2D particlesGenTime;
 uniform sampler2D particlesSpeed; // (u, v, norm)
 
 // range (min, max)
@@ -12,9 +13,9 @@ uniform vec2 latRange;
 uniform vec2 dataLonRange;
 uniform vec2 dataLatRange;
 
+uniform float currentTime;
+uniform float maxTimeDelta;
 uniform float randomCoefficient;
-uniform float dropRate;
-uniform float dropRateBump;
 
 // 添加新的 uniform 变量
 uniform bool useViewerBounds;
@@ -66,8 +67,7 @@ vec2 generateRandomParticle(vec2 seed) {
     return vec2(randomLon, randomLat);
 }
 
-bool longitudeOutside(float lon, float west, float east)
-{
+bool longitudeOutside(float lon, float west, float east) {
     if (west <= east) {
         return lon < west || lon > east;
     }
@@ -77,8 +77,8 @@ bool longitudeOutside(float lon, float west, float east)
 }
 
 
-bool particleOutbound(vec2 particle)
-{
+bool particleOutbound(vec2 particle) {
+
     float minLat;
     float maxLat;
     float minLon;
@@ -106,15 +106,17 @@ out vec4 fragColor;
 void main() {
     vec2 nextParticle = texture(nextParticlesPosition, v_textureCoordinates).rg;
     vec4 nextSpeed = texture(particlesSpeed, v_textureCoordinates);
+    vec2 particleGenTime = texture(particlesGenTime, v_textureCoordinates).rg;
+
+    float deltaTime = currentTime - particleGenTime.x;
     float speedNorm = nextSpeed.a;
-    float particleDropRate = dropRate + dropRateBump * speedNorm;
 
     vec2 seed1 = nextParticle.xy + v_textureCoordinates;
     vec2 seed2 = nextSpeed.rg + v_textureCoordinates;
     
     float randomNumber = rand(seed2, normalRange);
 
-    if (randomNumber < particleDropRate || particleOutbound(nextParticle)) {
+    if (deltaTime > particleGenTime.y || particleOutbound(nextParticle)) {
         vec2 randomParticle = generateRandomParticle(seed1);
         fragColor = vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
     } else {

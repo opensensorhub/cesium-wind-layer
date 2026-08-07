@@ -72,8 +72,6 @@ const windLayer = new WindLayer(viewer, windData, {
   lineWidth: { min: 1, max: 2 },        // Width of particle trails
   lineLength: { min: 20, max: 100 },    // Length range of particle trails
   speedFactor: 1.0,                     // Speed multiplier
-  dropRate: 0.003,                      // Rate at which particles are dropped
-  dropRateBump: 0.001,                  // Additional drop rate for slow particles
   colors: ['white'],                    // Colors for particles
   flipY: false,                         // Flip Y coordinates if needed
   domain: undefined,                    // Optional: domain for speed
@@ -97,8 +95,6 @@ interface WindLayerOptions {
   lineWidth: { min: number; max: number };   // Width range of particle trails in pixels. Default is { min: 1, max: 2 }.
   lineLength: { min: number; max: number };  // Length range of particle trails. Default is { min: 20, max: 100 }.
   speedFactor: number;                       // Factor to adjust the speed of particles. Default is 1.0.
-  dropRate: number;                          // Rate at which particles are dropped (reset). Default is 0.003.
-  dropRateBump: number;                      // Additional drop rate for slow-moving particles. Default is 0.001.
   colors: string[];                          // Array of colors for particles. Can be used to create color gradients. Default is ['white'].
   flipY: boolean;                            // Whether to flip the Y-axis of the wind data. Default is false.
   useViewerBounds: boolean;                  // Whether to use the viewer bounds to generate particles. Default is false.

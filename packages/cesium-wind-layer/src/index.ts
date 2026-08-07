@@ -21,9 +21,7 @@ type WindLayerEventCallback = (data: WindData | WindLayerOptions) => void;
 
 export const DefaultOptions: WindLayerOptions = {
   particlesTextureSize: 100,
-  dropRate: 0.003,
   particleHeight: 1000,
-  dropRateBump: 0.01,
   speedFactor: 1.0,
   lineWidth: { min: 1, max: 2 },
   lineLength: { min: 20, max: 100 },
@@ -32,7 +30,10 @@ export const DefaultOptions: WindLayerOptions = {
   useViewerBounds: false,
   domain: undefined,
   displayRange: undefined,
-  dynamic: true
+  dynamic: true,
+  particleFadeInTime: 500,
+  particleFadeOutTime: 500,
+  particleLifeTime: 2000,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 
@@ -82,8 +83,6 @@ export class WindLayer {
    * @param {Object} [options.lineWidth={ min: 1, max: 2 }] - Width range of particle trails.
    * @param {Object} [options.lineLength={ min: 20, max: 100 }] - Length range of particle trails.
    * @param {number} [options.speedFactor=1.0] - Factor to adjust the speed of particles.
-   * @param {number} [options.dropRate=0.003] - Rate at which particles are dropped (reset).
-   * @param {number} [options.dropRateBump=0.001] - Additional drop rate for slow-moving particles.
    * @param {string[]} [options.colors=['white']] - Array of colors for particles. Can be used to create color gradients.
    * @param {boolean} [options.flipY=false] - Whether to flip the Y-axis of the wind data.
    * @param {boolean} [options.useViewerBounds=false] - Whether to use the viewer bounds to generate particles.
@@ -109,14 +108,14 @@ export class WindLayer {
 
     this.setupEventListeners();
 
-    this.entity = viewer.entities.add({
-      rectangle: {
-        coordinates: this.viewerParameters.viewBounds,
-        material: Color.RED.withAlpha(0.2),
-        outline: true,
-        outlineColor: Color.YELLOW
-      }
-    });
+    // this.entity = viewer.entities.add({
+    //   rectangle: {
+    //     coordinates: this.viewerParameters.viewBounds,
+    //     material: Color.RED.withAlpha(0.2),
+    //     outline: true,
+    //     outlineColor: Color.YELLOW
+    //   }
+    // });
   }
 
   private setupEventListeners(): void {
@@ -253,48 +252,52 @@ export class WindLayer {
 
   private updateViewerParameters(): void {
 
-    let viewBounds
-    const viewBoundsSamples = this.screenSamples.map(val => this.viewer.camera.pickEllipsoid(val, this.scene.ellipsoid))
-    .filter(val => val != undefined);
+    let viewBounds : Rectangle | undefined = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north)
 
-    if(viewBoundsSamples.length >= 4) {
-      const screenBounds = Rectangle.fromCartesianArray(viewBoundsSamples)
-      const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north)
+    if(this.options.useViewerBounds) {
+      
+      const viewBoundsSamples = this.screenSamples.map(val => this.viewer.camera.pickEllipsoid(val, this.scene.ellipsoid))
+      .filter(val => val != undefined);
 
-      //bug with Rectangle.intersection when crossing antimeridian
-      //workaround is to separate rectangles west and east of antimeridian, perform 2 intersections and rejoin
-      //https://github.com/CesiumGS/cesium/issues/2195
-      if(screenBounds.west > screenBounds.east) {
-        const westR = screenBounds.clone()
-        westR.east = CesiumMath.PI
-        const eastR = screenBounds.clone()
-        eastR.west = -CesiumMath.PI
+      if(viewBoundsSamples.length >= 4) {
+        const screenBounds = Rectangle.fromCartesianArray(viewBoundsSamples)
+        const dataBounds = viewBounds
+
+        //bug with Rectangle.intersection when crossing antimeridian
+        //workaround is to separate rectangles west and east of antimeridian, perform 2 intersections and rejoin
+        //https://github.com/CesiumGS/cesium/issues/2195
+        if(screenBounds.west > screenBounds.east) {
+          const westR = screenBounds.clone()
+          westR.east = CesiumMath.PI
+          const eastR = screenBounds.clone()
+          eastR.west = -CesiumMath.PI
+          
+          const westI = Rectangle.intersection(westR, dataBounds)
+          const eastI = Rectangle.intersection(eastR, dataBounds)
+
+          // for west, if no intersection with west rect, check the east rect
+          // vice versa for east value
+          //if no intersection with either, 0
+          //for north south, take first non-null value, otherwise 0
+          viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
+            westI ? westI.south : eastI ? eastI.south : 0,
+            eastI ? eastI.east : westI ? westI.east : 0, 
+            westI ? westI.north : eastI ? eastI.north : 0)
+
+        } else {
+          viewBounds = Rectangle.intersection(screenBounds, dataBounds);
+        }
         
-        const westI = Rectangle.intersection(westR, dataBounds)
-        const eastI = Rectangle.intersection(eastR, dataBounds)
-
-        // for west, if no intersection with west rect, check the east rect
-        // vice versa for east value
-        //if no intersection with either, 0
-        //for north south, take first non-null value, otherwise 0
-        viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
-          westI ? westI.south : eastI ? eastI.south : 0,
-          eastI ? eastI.east : westI ? westI.east : 0, 
-          westI ? westI.north : eastI ? eastI.north : 0)
-
-      } else {
-        viewBounds = Rectangle.intersection(screenBounds, dataBounds);
       }
-      
-    }
 
-    //changed bounds
-    if(this.particleSystem && !viewBounds?.equals(this.viewerParameters.viewBounds)) {
-      if(this.entity && this.entity.rectangle) {
-        this.entity.rectangle.coordinates = new ConstantProperty(viewBounds ?? new Rectangle(0,0,0,0))
+      //changed bounds
+      if(this.particleSystem && !viewBounds?.equals(this.viewerParameters.viewBounds)) {
+        if(this.entity && this.entity.rectangle) {
+          this.entity.rectangle.coordinates = new ConstantProperty(viewBounds ?? new Rectangle(0,0,0,0))
+        }
+        
+        this.particleSystem.clearParticles()
       }
-      
-      this.particleSystem.clearParticles()
     }
 
     // // Add 5% buffer to lonRange and latRange

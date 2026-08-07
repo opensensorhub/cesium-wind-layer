@@ -33,16 +33,24 @@ export interface WindLayerOptions {
    * Controls the movement speed of particles.
    */
   speedFactor: number;
+
   /**
-   * Rate at which particles are dropped (reset). Default is 0.003.
-   * Controls the lifecycle of particles.
+   * Total time particle stays alive before regeneration, in milliseconds
    */
-  dropRate: number;
+  particleLifeTime: number;
+
   /**
-   * Additional drop rate for slow-moving particles. Default is 0.001.
-   * Increases the probability of dropping particles when they move slowly.
+   * Time for particle to fade in, in milliseconds.
+   * particleFadeInTime + particleFadeOutTime <= particleLifeTime
    */
-  dropRateBump: number;
+  particleFadeInTime: number;
+
+  /**
+   * Time for particle to fade out, in milliseconds.
+   * particleFadeInTime + particleFadeOutTime <= particleLifeTime
+   */
+  particleFadeOutTime: number;
+
   /**
    * Whether to flip the Y-axis of the wind data. Default is false.
    */
