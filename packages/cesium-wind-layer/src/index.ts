@@ -120,7 +120,8 @@ export class WindLayer {
 
   private setupEventListeners(): void {
     this.viewer.camera.percentageChanged = 0.01;
-    this.viewer.camera.moveEnd.addEventListener(this.updateViewerParameters.bind(this));
+    this.viewer.camera.moveEnd.addEventListener(this.moveEnd.bind(this));
+    this.viewer.camera.moveStart.addEventListener(this.moveStart.bind(this));
     this.scene.morphComplete.addEventListener(this.updateViewerParameters.bind(this));
     window.addEventListener("resize", () => {
       this.updateScreenSamples.bind(this);
@@ -129,9 +130,19 @@ export class WindLayer {
   }
 
   private removeEventListeners(): void {
-    this.viewer.camera.moveEnd.removeEventListener(this.updateViewerParameters.bind(this));
+    this.viewer.camera.moveEnd.removeEventListener(this.moveEnd.bind(this));
+    this.viewer.camera.moveStart.removeEventListener(this.moveStart.bind(this));
     this.scene.morphComplete.removeEventListener(this.updateViewerParameters.bind(this));
     window.removeEventListener("resize", this.updateViewerParameters.bind(this));
+  }
+
+  private moveStart(): void {
+    this.particleSystem.clearParticles()
+  }
+
+  private moveEnd(): void {
+    this.updateViewerParameters()
+    this.particleSystem.computing.createParticlesTextures();
   }
 
   private updateScreenSamples() {
@@ -288,15 +299,6 @@ export class WindLayer {
           viewBounds = Rectangle.intersection(screenBounds, dataBounds);
         }
         
-      }
-
-      //changed bounds
-      if(this.particleSystem && !viewBounds?.equals(this.viewerParameters.viewBounds)) {
-        if(this.entity && this.entity.rectangle) {
-          this.entity.rectangle.coordinates = new ConstantProperty(viewBounds ?? new Rectangle(0,0,0,0))
-        }
-        
-        this.particleSystem.clearParticles()
       }
     }
 

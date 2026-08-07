@@ -49,7 +49,6 @@ export class WindParticleSystem {
   clearParticles() {
     this.computing.destroyParticlesTextures();
     this.clearFramebuffers()
-    this.computing.createParticlesTextures();
   }
 
   changeOptions(options: Partial<WindLayerOptions>) {
