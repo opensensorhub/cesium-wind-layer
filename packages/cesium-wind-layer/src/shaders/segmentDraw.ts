@@ -46,12 +46,16 @@ float fadeOut(float x, float L, float f1) {
 }
 
 float hannFade(float x, float f0, float f1, float L) {
-    if (x <= f0) {
+    if(x < 0.0) {
+        return 0.0;
+    } else if(x <= f0) {
         return fadeIn(x, L, f0);
-    } else if (x <=  L - f1) {
+    } else if(x <=  L - f1) {
         return 1.0;
-    } else {
+    } else if(x <= L){
         return fadeOut(x, L, f1);
+    } else {
+        return 0.0;
     }
 }
 
