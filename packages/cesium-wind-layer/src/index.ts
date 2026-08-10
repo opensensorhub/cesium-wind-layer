@@ -137,12 +137,16 @@ export class WindLayer {
   }
 
   private moveStart(): void {
-    this.particleSystem.clearParticles()
+    if(this.options.useViewerBounds) {
+      this.particleSystem.clearParticles()
+    }
   }
 
   private moveEnd(): void {
     this.updateViewerParameters()
-    this.particleSystem.computing.createParticlesTextures();
+    if(this.options.useViewerBounds) {
+      this.particleSystem.computing.createParticlesTextures();
+    }
   }
 
   private updateScreenSamples() {
