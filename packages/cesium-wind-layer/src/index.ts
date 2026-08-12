@@ -48,6 +48,27 @@ export class WindLayer {
   private _resized: boolean = false;
   private entity: undefined|Entity = undefined;
   windData: Required<WindData>;
+  
+  get show(): boolean {
+    return this._showParticles;
+  }
+
+  set show(value: boolean) {
+    let update = false
+    if (this._showParticles !== value) {
+      this._showParticles = value;
+      update = true;
+    }
+    
+    if (this._showHeatmap !== value) {
+      this._showHeatmap = value;
+      update = true;
+    }
+
+    if(update) {
+      this.updatePrimitivesVisibility(value);
+    }
+  }
 
   get showParticles(): boolean {
     return this._showParticles;
@@ -437,6 +458,13 @@ export class WindLayer {
     // Clear all event listeners
     this.eventListeners.clear();
     this._isDestroyed = true;
+  }
+
+  private updatePrimitivesVisibility(visibility?: boolean): void {
+    const show = visibility !== undefined ? visibility : this._showHeatmap && this._showParticles;
+    this.primitives.forEach(primitive => {
+      primitive.show = show;
+    });
   }
 
   private updateParticlesVisibility(visibility?: boolean): void {
