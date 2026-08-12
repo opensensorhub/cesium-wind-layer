@@ -1,4 +1,4 @@
-import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2 } from 'cesium';
+import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
@@ -12,7 +12,7 @@ export class WindParticlesRendering {
   viewerParameters: any;
   private computing: WindParticlesComputing;
   public primitives!: ReturnType<typeof this.createPrimitives>;
-  private colorTable: Texture;
+  public colorTable: Texture;
   textures: ReturnType<typeof this.createRenderingTextures>;
   framebuffers: ReturnType<typeof this.createRenderingFramebuffers>;
 
@@ -196,6 +196,7 @@ export class WindParticlesRendering {
         particlesSpeed: () => this.computing.particlesTextures.particlesSpeed,
         frameRateAdjustment: () => this.computing.frameRateAdjustment,
         colorTable: () => this.colorTable,
+        useHeatmap: () => this.options.useHeatmap,
         domain: () => {
           const domain = new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max);
           return domain;
@@ -228,7 +229,7 @@ export class WindParticlesRendering {
         depthTest: {
           enabled: true
         },
-        depthMask: true,
+        depthMask: false,
         blending: {
           enabled: true,
           blendEquation: WebGLRenderingContext.FUNC_ADD,

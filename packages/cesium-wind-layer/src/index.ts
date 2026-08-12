@@ -5,14 +5,18 @@ import {
   SceneMode,
   Math as CesiumMath,
   Rectangle,
-  Color,
   Entity,
-  ConstantProperty,
+  Material,
+  Primitive,
+  RectangleGeometry,
+  GeometryInstance,
+  MaterialAppearance,
 } from 'cesium';
 
 import { WindLayerOptions, WindData, WindDataAtLonLat } from './types';
 import { WindParticleSystem } from './windParticleSystem';
 import { deepMerge } from './utils';
+import { renderHeatmapShader } from './shaders/HeatmapDraw';
 
 export * from './types';
 
@@ -34,6 +38,7 @@ export const DefaultOptions: WindLayerOptions = {
   particleFadeInTime: 500,
   particleFadeOutTime: 500,
   particleLifeTime: 2000,
+  useHeatmap: true,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 
@@ -43,6 +48,8 @@ export class WindLayer {
   private _resized: boolean = false;
   private entity: undefined|Entity = undefined;
   windData: Required<WindData>;
+  private heatmapPrimitive: Primitive;
+  private heatmapMat: Material;
 
   get show(): boolean {
     return this._show;
@@ -62,7 +69,8 @@ export class WindLayer {
   options: WindLayerOptions;
   private particleSystem: WindParticleSystem;
   private viewerParameters: {
-    viewBounds: Rectangle|undefined
+    viewBounds: Rectangle|undefined;
+    dataBounds: Rectangle;
     pixelSize: number;
     sceneMode: SceneMode;
   };
@@ -98,13 +106,49 @@ export class WindLayer {
     this.updateScreenSamples();
     this.viewerParameters = {
       viewBounds: new Rectangle(-180, -90, 180, 90),
+      dataBounds: Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north),
       pixelSize: 1000.0,
       sceneMode: this.scene.mode
     };
     this.updateViewerParameters();
 
     this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.viewerParameters, this.scene);
+
+    console.log(this.windData.speed)
+    console.log(this.options.domain)
+
+    this.heatmapMat = new Material({
+      translucent: false,
+      fabric: {
+        type: 'Heatmap',
+        uniforms: {
+          U: Material.DefaultImageId,
+          V: Material.DefaultImageId,
+          domain: new Cartesian2(this.options.domain?.min ?? this.windData.speed.min, this.options.domain?.max ?? this.windData.speed.max),
+          colorTable: Material.DefaultImageId,
+          useHeatmap: this.options.useHeatmap
+        },
+        source: renderHeatmapShader
+      }
+    });
+
+    this.heatmapPrimitive = new Primitive({
+      geometryInstances: new GeometryInstance({
+        geometry: new RectangleGeometry({
+          rectangle: this.viewerParameters.dataBounds,
+          height: 0.0
+        }),
+      }),
+      appearance: new MaterialAppearance({
+        material: this.heatmapMat,
+      }),
+    })
+    
     this.add();
+
+    this.heatmapMat.uniforms.U = this.particleSystem.computing.windTextures.U;
+    this.heatmapMat.uniforms.V = this.particleSystem.computing.windTextures.V;
+    this.heatmapMat.uniforms.colorTable = this.particleSystem.rendering.colorTable;
 
     this.setupEventListeners();
 
@@ -267,8 +311,6 @@ export class WindLayer {
 
   private updateViewerParameters(): void {
 
-    let viewBounds : Rectangle | undefined = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north)
-
     if(this.options.useViewerBounds) {
       
       const viewBoundsSamples = this.screenSamples.map(val => this.viewer.camera.pickEllipsoid(val, this.scene.ellipsoid))
@@ -276,7 +318,6 @@ export class WindLayer {
 
       if(viewBoundsSamples.length >= 4) {
         const screenBounds = Rectangle.fromCartesianArray(viewBoundsSamples)
-        const dataBounds = viewBounds
 
         //bug with Rectangle.intersection when crossing antimeridian
         //workaround is to separate rectangles west and east of antimeridian, perform 2 intersections and rejoin
@@ -287,20 +328,20 @@ export class WindLayer {
           const eastR = screenBounds.clone()
           eastR.west = -CesiumMath.PI
           
-          const westI = Rectangle.intersection(westR, dataBounds)
-          const eastI = Rectangle.intersection(eastR, dataBounds)
+          const westI = Rectangle.intersection(westR, this.viewerParameters.dataBounds)
+          const eastI = Rectangle.intersection(eastR, this.viewerParameters.dataBounds)
 
           // for west, if no intersection with west rect, check the east rect
           // vice versa for east value
           //if no intersection with either, 0
           //for north south, take first non-null value, otherwise 0
-          viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
+          this.viewerParameters.viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
             westI ? westI.south : eastI ? eastI.south : 0,
             eastI ? eastI.east : westI ? westI.east : 0, 
             westI ? westI.north : eastI ? eastI.north : 0)
 
         } else {
-          viewBounds = Rectangle.intersection(screenBounds, dataBounds);
+          this.viewerParameters.viewBounds = Rectangle.intersection(screenBounds, this.viewerParameters.dataBounds);
         }
         
       }
@@ -316,16 +357,14 @@ export class WindLayer {
     // latRange.y = Math.min(this.windData.bounds.north, latRange.y + latBuffer);
     //console.debug(this.viewer.ellipsoid.surfaceArea(viewBounds))
 
-    this.viewerParameters.viewBounds = viewBounds;
-
     // Calculate pixelSize based on the visible range
     const dataLonRange = this.windData.bounds.east < this.windData.bounds.west ? this.windData.bounds.west - (this.windData.bounds.east + 360) : this.windData.bounds.east - this.windData.bounds.west;
     const dataLatRange = this.windData.bounds.north - this.windData.bounds.south;
 
     // Calculate the ratio of visible area to total data area based on the shortest side
-    if(viewBounds) {
-      const visibleRatioLon = (viewBounds.east - viewBounds.west) / CesiumMath.toRadians(dataLonRange);
-      const visibleRatioLat = (viewBounds.north - viewBounds.south) / CesiumMath.toRadians(dataLatRange);
+    if(this.viewerParameters.viewBounds) {
+      const visibleRatioLon = (this.viewerParameters.viewBounds.east - this.viewerParameters.viewBounds.west) / CesiumMath.toRadians(dataLonRange);
+      const visibleRatioLat = (this.viewerParameters.viewBounds.north - this.viewerParameters.viewBounds.south) / CesiumMath.toRadians(dataLatRange);
       const visibleRatio = Math.min(visibleRatioLon, visibleRatioLat);
 
       // Map the ratio to a pixelSize value between 0 and 1000
@@ -360,6 +399,11 @@ export class WindLayer {
     if (this._isDestroyed) return;
     this.options = deepMerge(options, this.options);
     this.particleSystem.changeOptions(options);
+    this.heatmapMat.uniforms.U = this.windData.u.array;
+    this.heatmapMat.uniforms.V = this.windData.v.array;
+    this.heatmapMat.uniforms.colorTable = this.options.colors;
+    this.heatmapMat.uniforms.domain = new Cartesian2(this.options.domain?.min ?? this.windData.speed.min, this.options.domain?.max ?? this.windData.speed.max);
+    this.heatmapMat.uniforms.useHeatmap = this.options.useHeatmap;
     this.viewer.scene.requestRender();
     // Dispatch options change event
     this.dispatchEvent('optionsChange', this.options);
@@ -388,6 +432,7 @@ export class WindLayer {
    * Add the wind layer to the scene.
    */
   add(): void {
+    this.scene.primitives.add(this.heatmapPrimitive)
     this.primitives = this.particleSystem.getPrimitives();
     this.primitives.forEach(primitive => {
       this.scene.primitives.add(primitive);

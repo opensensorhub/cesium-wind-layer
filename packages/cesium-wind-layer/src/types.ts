@@ -87,6 +87,11 @@ export interface WindLayerOptions {
    * When set to false, particles will remain static.
    */
   dynamic: boolean;
+
+  /**
+   * Toggle showing speed heatmap
+   */
+  useHeatmap: boolean;
 }
 
 export interface WindDataDemention {
