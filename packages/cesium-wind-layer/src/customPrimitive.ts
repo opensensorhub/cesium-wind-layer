@@ -30,6 +30,7 @@ interface CustomPrimitiveOptions {
   outputTexture?: any;
   autoClear?: boolean;
   preExecute?: () => void;
+  name?: string;
 }
 
 export default class CustomPrimitive {
@@ -49,6 +50,7 @@ export default class CustomPrimitive {
   commandToExecute?: DrawCommand | ComputeCommand;
   clearCommand?: ClearCommand;
   isDynamic: () => boolean;
+  name: string;
 
   constructor(options: CustomPrimitiveOptions) {
     this.commandType = options.commandType;
@@ -63,6 +65,7 @@ export default class CustomPrimitive {
     this.outputTexture = options.outputTexture;
     this.autoClear = options.autoClear ?? false;
     this.preExecute = options.preExecute;
+    this.name = options.name ?? 'Default'
 
     this.show = true;
     this.commandToExecute = undefined;

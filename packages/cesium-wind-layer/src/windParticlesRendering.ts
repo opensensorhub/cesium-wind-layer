@@ -1,4 +1,4 @@
-import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry } from 'cesium';
+import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
@@ -161,6 +161,14 @@ export class WindParticlesRendering {
     return geometry;
   }
 
+  createHeatmapGeometry(): Geometry {
+    return RectangleGeometry.createGeometry(new RectangleGeometry({
+      rectangle: this.viewerParameters.dataBounds,
+      height: 0.0,
+      vertexFormat: VertexFormat.POSITION_AND_ST
+    }))!;
+  }
+
   private createRawRenderState(options: {
     viewport?: any;
     depthTest?: any;
@@ -196,7 +204,6 @@ export class WindParticlesRendering {
         particlesSpeed: () => this.computing.particlesTextures.particlesSpeed,
         frameRateAdjustment: () => this.computing.frameRateAdjustment,
         colorTable: () => this.colorTable,
-        useHeatmap: () => this.options.useHeatmap,
         domain: () => {
           const domain = new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max);
           return domain;
@@ -239,7 +246,39 @@ export class WindParticlesRendering {
       })
     });
 
-    return { segments };
+    const heatmap = new CustomPrimitive({
+      name: 'heatmap',
+      commandType: 'Draw',
+      attributeLocations: {
+        st: 0,
+        position: 1
+      },
+      geometry: this.createHeatmapGeometry(),
+      primitiveType: PrimitiveType.TRIANGLES,
+      uniformMap: {
+        U: () => this.computing.windTextures.U,
+        V: () =>  this.computing.windTextures.V,
+        domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
+        colorTable: () =>  this.colorTable,
+      },
+      vertexShaderSource: ShaderManager.getHeatmapVertexShader(),
+      fragmentShaderSource: ShaderManager.getHeatmapFragmentShader(),
+      rawRenderState: this.createRawRenderState({
+        viewport: undefined,
+        depthTest: {
+          enabled: true
+        },
+        depthMask: false,
+        blending: {
+          enabled: true,
+          blendEquation: WebGLRenderingContext.FUNC_ADD,
+          blendFuncSource: WebGLRenderingContext.SRC_ALPHA,
+          blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
+        },
+      })
+    })
+
+    return { segments, heatmap };
   }
 
   onParticlesTextureSizeChange() {

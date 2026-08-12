@@ -16,7 +16,7 @@ import {
 import { WindLayerOptions, WindData, WindDataAtLonLat } from './types';
 import { WindParticleSystem } from './windParticleSystem';
 import { deepMerge } from './utils';
-import { renderHeatmapShader } from './shaders/HeatmapDraw';
+import CustomPrimitive from './customPrimitive';
 
 export * from './types';
 
@@ -38,27 +38,36 @@ export const DefaultOptions: WindLayerOptions = {
   particleFadeInTime: 500,
   particleFadeOutTime: 500,
   particleLifeTime: 2000,
-  useHeatmap: true,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 
 
 export class WindLayer {
-  private _show: boolean = true;
+  private _showParticles: boolean = true;
+  private _showHeatmap: boolean = true;
   private _resized: boolean = false;
   private entity: undefined|Entity = undefined;
   windData: Required<WindData>;
-  private heatmapPrimitive: Primitive;
-  private heatmapMat: Material;
 
-  get show(): boolean {
-    return this._show;
+  get showParticles(): boolean {
+    return this._showParticles;
   }
 
-  set show(value: boolean) {
-    if (this._show !== value) {
-      this._show = value;
-      this.updatePrimitivesVisibility(value);
+  set showParticles(value: boolean) {
+    if (this._showParticles !== value) {
+      this._showParticles = value;
+      this.updateParticlesVisibility(value);
+    }
+  }
+
+  get showHeatmap(): boolean {
+    return this._showHeatmap;
+  }
+
+  set showHeatmap(value: boolean) {
+    if (this._showHeatmap !== value) {
+      this._showHeatmap = value;
+      this.updateHeatmapVisibility(value);
     }
   }
 
@@ -76,7 +85,7 @@ export class WindLayer {
   };
   private screenSamples: Cartesian2[]
   private _isDestroyed: boolean = false;
-  private primitives: any[] = [];
+  private primitives: CustomPrimitive[] = [];
   private eventListeners: Map<WindLayerEventType, Set<WindLayerEventCallback>> = new Map();
 
   /**
@@ -97,7 +106,8 @@ export class WindLayer {
    * @param {boolean} [options.dynamic=true] - Whether to enable dynamic particle animation.
    */
   constructor(viewer: Viewer, windData: WindData, options?: Partial<WindLayerOptions>) {
-    this.show = true;
+    this.showHeatmap = true;
+    this.showParticles = true;
     this.viewer = viewer;
     this.scene = viewer.scene;
     this.options = { ...WindLayer.defaultOptions, ...options };
@@ -113,42 +123,8 @@ export class WindLayer {
     this.updateViewerParameters();
 
     this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.viewerParameters, this.scene);
-
-    console.log(this.windData.speed)
-    console.log(this.options.domain)
-
-    this.heatmapMat = new Material({
-      translucent: false,
-      fabric: {
-        type: 'Heatmap',
-        uniforms: {
-          U: Material.DefaultImageId,
-          V: Material.DefaultImageId,
-          domain: new Cartesian2(this.options.domain?.min ?? this.windData.speed.min, this.options.domain?.max ?? this.windData.speed.max),
-          colorTable: Material.DefaultImageId,
-          useHeatmap: this.options.useHeatmap
-        },
-        source: renderHeatmapShader
-      }
-    });
-
-    this.heatmapPrimitive = new Primitive({
-      geometryInstances: new GeometryInstance({
-        geometry: new RectangleGeometry({
-          rectangle: this.viewerParameters.dataBounds,
-          height: 0.0
-        }),
-      }),
-      appearance: new MaterialAppearance({
-        material: this.heatmapMat,
-      }),
-    })
     
     this.add();
-
-    this.heatmapMat.uniforms.U = this.particleSystem.computing.windTextures.U;
-    this.heatmapMat.uniforms.V = this.particleSystem.computing.windTextures.V;
-    this.heatmapMat.uniforms.colorTable = this.particleSystem.rendering.colorTable;
 
     this.setupEventListeners();
 
@@ -399,11 +375,6 @@ export class WindLayer {
     if (this._isDestroyed) return;
     this.options = deepMerge(options, this.options);
     this.particleSystem.changeOptions(options);
-    this.heatmapMat.uniforms.U = this.windData.u.array;
-    this.heatmapMat.uniforms.V = this.windData.v.array;
-    this.heatmapMat.uniforms.colorTable = this.options.colors;
-    this.heatmapMat.uniforms.domain = new Cartesian2(this.options.domain?.min ?? this.windData.speed.min, this.options.domain?.max ?? this.windData.speed.max);
-    this.heatmapMat.uniforms.useHeatmap = this.options.useHeatmap;
     this.viewer.scene.requestRender();
     // Dispatch options change event
     this.dispatchEvent('optionsChange', this.options);
@@ -432,7 +403,6 @@ export class WindLayer {
    * Add the wind layer to the scene.
    */
   add(): void {
-    this.scene.primitives.add(this.heatmapPrimitive)
     this.primitives = this.particleSystem.getPrimitives();
     this.primitives.forEach(primitive => {
       this.scene.primitives.add(primitive);
@@ -469,10 +439,21 @@ export class WindLayer {
     this._isDestroyed = true;
   }
 
-  private updatePrimitivesVisibility(visibility?: boolean): void {
-    const show = visibility !== undefined ? visibility : this._show;
+  private updateParticlesVisibility(visibility?: boolean): void {
+    const showParticles = visibility !== undefined ? visibility : this._showParticles;
     this.primitives.forEach(primitive => {
-      primitive.show = show;
+      if(primitive.name !== 'heatmap') {
+        primitive.show = showParticles;
+      }
+    });
+  }
+
+  private updateHeatmapVisibility(visibility?: boolean): void {
+    const showHeatmap = visibility !== undefined ? visibility : this._showHeatmap;
+    this.primitives.forEach(primitive => {
+      if(primitive.name === 'heatmap') {
+        primitive.show = showHeatmap;
+      }
     });
   }
 

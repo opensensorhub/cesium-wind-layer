@@ -4,7 +4,7 @@ import { calculateSpeedShader } from './shaders/calculateSpeed';
 import { postProcessingPositionFragmentShader } from './shaders/postProcessingPosition';
 import { renderParticlesFragmentShader, renderParticlesVertexShader } from './shaders/segmentDraw';
 import { calculateGenTimeShader } from './shaders/calculateGenTime'
-import { renderHeatmapShader } from './shaders/HeatmapDraw';
+import { renderHeatmapVertexShader, renderHeatmapFragmentShader } from './shaders/HeatmapDraw';
 
 export class ShaderManager {
   static getCalculateSpeedShader(): ShaderSource {
@@ -43,9 +43,15 @@ export class ShaderManager {
     });
   }
 
-  static getHeatmapShader(): ShaderSource {
+  static getHeatmapVertexShader(): ShaderSource {
     return new ShaderSource({
-      sources: [renderHeatmapShader]
+      sources: [renderHeatmapVertexShader]
+    });
+  }
+
+  static getHeatmapFragmentShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [renderHeatmapFragmentShader]
     });
   }
 

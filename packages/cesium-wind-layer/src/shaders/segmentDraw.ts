@@ -204,7 +204,7 @@ uniform vec2 domain;
 uniform vec2 displayRange;
 uniform sampler2D colorTable;
 uniform sampler2D segmentsDepthTexture;
-uniform bool useHeatmap;
+//uniform bool useHeatmap;
 
 out vec4 fragColor;
 
@@ -213,7 +213,7 @@ void main() {
     if(speed.a > zero && speed.b > displayRange.x && speed.b < displayRange.y) {
         float speedLength = clamp(speed.b, domain.x, domain.y);
         float normalizedSpeed = (speedLength - domain.x) / (domain.y - domain.x);
-        vec4 baseColor = useHeatmap ? vec4(1.0) : texture(colorTable, vec2(normalizedSpeed, zero));
+        vec4 baseColor = /*useHeatmap ? vec4(1.0) :*/ texture(colorTable, vec2(normalizedSpeed, zero));
 
         // 使用更平滑的渐变效果
         float alpha = smoothstep(0.0, 1.0, v_segmentPosition);

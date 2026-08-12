@@ -26,6 +26,7 @@ export class WindParticleSystem {
       this.computing.primitives.updatePosition,
       this.computing.primitives.postProcessingPosition,
       this.computing.primitives.calculateGenTime,
+      this.rendering.primitives.heatmap,
       this.rendering.primitives.segments,
     ];
 
