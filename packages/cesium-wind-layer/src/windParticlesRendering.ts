@@ -228,6 +228,7 @@ export class WindParticlesRendering {
         },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
         segmentsDepthTexture: () => this.textures.segmentsDepth,
+        opacity: () => this.options.particlesOpacity
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
@@ -260,6 +261,7 @@ export class WindParticlesRendering {
         V: () =>  this.computing.windTextures.V,
         domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
         colorTable: () =>  this.colorTable,
+        opacity: () => this.options.heatmapOpacity
       },
       vertexShaderSource: ShaderManager.getHeatmapVertexShader(),
       fragmentShaderSource: ShaderManager.getHeatmapFragmentShader(),

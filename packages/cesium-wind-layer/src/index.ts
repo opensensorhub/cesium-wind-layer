@@ -6,11 +6,6 @@ import {
   Math as CesiumMath,
   Rectangle,
   Entity,
-  Material,
-  Primitive,
-  RectangleGeometry,
-  GeometryInstance,
-  MaterialAppearance,
 } from 'cesium';
 
 import { WindLayerOptions, WindData, WindDataAtLonLat } from './types';
@@ -38,6 +33,8 @@ export const DefaultOptions: WindLayerOptions = {
   particleFadeInTime: 500,
   particleFadeOutTime: 500,
   particleLifeTime: 2000,
+  heatmapOpacity: 1,
+  particlesOpacity: 1,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 

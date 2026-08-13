@@ -27,6 +27,7 @@ export const renderHeatmapFragmentShader = /*glsl*/`#version 300 es
 
     uniform sampler2D colorTable;
     uniform vec2 domain;
+    uniform float opacity;
 
     out vec4 fragColor;
 
@@ -36,6 +37,6 @@ export const renderHeatmapFragmentShader = /*glsl*/`#version 300 es
 
         vec4 baseColor = texture(colorTable, vec2(speedNormalized, 0.0));
 
-        fragColor = vec4(baseColor.rgb, 0.5); 
+        fragColor = vec4(baseColor.rgb, opacity * 0.5); 
     }
 `;

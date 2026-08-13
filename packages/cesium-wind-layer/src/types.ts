@@ -87,6 +87,16 @@ export interface WindLayerOptions {
    * When set to false, particles will remain static.
    */
   dynamic: boolean;
+
+  /**
+   * 0-1 alpha value for heatmap
+   */
+  heatmapOpacity: number;
+
+  /**
+   * 0-1 alpha value for particles
+   */
+  particlesOpacity: number;
 }
 
 export interface WindDataDemention {
