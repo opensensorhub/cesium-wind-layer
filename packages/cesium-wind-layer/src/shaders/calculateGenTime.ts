@@ -29,6 +29,6 @@ void main() {
     //random offset is applied to particle life time to avoid lockstep fading
     //offset up to 1000ms
     float timeOffset = rand(seed, vec2(0.0, 1000.0));
-    fragColor = isRandom > 0.0 ? vec4(currentTime + timeOffset, particleLifeTime + timeOffset, 0.0, 0.0) : vec4(prevGenTime.x, prevGenTime.y, 0.0, 0.0); 
+    fragColor = float(isRandom > 0.0) * vec4(currentTime + timeOffset, particleLifeTime + timeOffset, 0.0, 0.0) + float(isRandom <= 0.0) * vec4(prevGenTime.x, prevGenTime.y, 0.0, 0.0); 
 }
 `;
