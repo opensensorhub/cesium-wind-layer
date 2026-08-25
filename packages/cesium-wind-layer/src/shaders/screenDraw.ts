@@ -18,10 +18,12 @@ export const screenDrawFragmentShader = /*glsl*/`#version 300 es
     in vec2 texCoord;
 
     uniform sampler2D tex;
+    uniform float opacity;
 
     out vec4 fragColor;
 
     void main() {
-        fragColor = texture(tex, texCoord);
+        vec4 final = texture(tex, texCoord);
+        fragColor = vec4(final.xyz, final.w * opacity);
     }
 `;

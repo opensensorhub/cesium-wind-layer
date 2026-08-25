@@ -289,8 +289,7 @@ export class WindParticlesRendering {
           return new Cartesian2(length.min, length.max);
         },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
-        segmentsDepthTexture: () => this.textures.segmentsDepth,
-        opacity: () => this.options.particlesOpacity
+        segmentsDepthTexture: () => this.textures.segmentsDepth
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
@@ -363,6 +362,7 @@ export class WindParticlesRendering {
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
         tex: () => this.framebuffers.nextTrails.getColorTexture(0),
+        opacity: () => this.options.particlesOpacity
       },
       vertexShaderSource: ShaderManager.getScreenDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getScreenDrawFragmentShader(),

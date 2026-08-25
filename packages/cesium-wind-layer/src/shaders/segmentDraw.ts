@@ -78,7 +78,6 @@ uniform vec2 domain;
 uniform vec2 displayRange;
 uniform sampler2D colorTable;
 uniform sampler2D segmentsDepthTexture;
-uniform float opacity;
 //uniform bool useHeatmap;
 
 out vec4 fragColor;
@@ -93,6 +92,6 @@ void main() {
     float speedAlpha = mix(0.3, 1.0, speed.a);
 
     // 组合颜色和透明度
-    fragColor = vec4(baseColor.rgb * inRange, inRange * opacity);
+    fragColor = vec4(baseColor.rgb * inRange, inRange);
 }
 `;
