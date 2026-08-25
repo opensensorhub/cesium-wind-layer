@@ -81,14 +81,16 @@ void main() {
     vec2 seed2 = nextSpeed.rg + v_textureCoordinates;
     
     float randomNumber = rand(seed2, normalRange);
+    float timeDiff = deltaTime - particleGenTime.y;
+    float isNotExpired = float(timeDiff < 0.0);
+    float isExpired = float(timeDiff >= 0.0);
 
-    if (deltaTime > particleGenTime.y) {
-        vec2 randomParticle = generateRandomParticle(seed1);
-        fragColor = vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
-    } else {
-        //wrap arround dateline
-        nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
-        fragColor = vec4(nextParticle, 0.0, 0.0);
-    }
+
+    vec2 randomParticle = generateRandomParticle(seed1);
+    fragColor = isExpired * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
+
+    //wrap arround dateline
+    nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
+    fragColor += isNotExpired * vec4(nextParticle, 0.0, 0.0);
 }
 `;
