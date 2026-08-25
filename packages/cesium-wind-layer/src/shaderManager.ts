@@ -5,6 +5,8 @@ import { postProcessingPositionFragmentShader } from './shaders/postProcessingPo
 import { renderParticlesFragmentShader, renderParticlesVertexShader } from './shaders/segmentDraw';
 import { calculateGenTimeShader } from './shaders/calculateGenTime'
 import { renderHeatmapVertexShader, renderHeatmapFragmentShader } from './shaders/HeatmapDraw';
+import { renderTrailsFragmentShader, renderTrailsVertexShader } from './shaders/trailsDraw';
+import { screenDrawFragmentShader, screenDrawVertexShader } from './shaders/screenDraw';
 
 export class ShaderManager {
   static getCalculateSpeedShader(): ShaderSource {
@@ -55,4 +57,27 @@ export class ShaderManager {
     });
   }
 
+  static getTrailsDrawVertexShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [renderTrailsVertexShader]
+    });
+  }
+
+  static getTrailsDrawFragmentShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [renderTrailsFragmentShader]
+    });
+  }
+
+  static getScreenDrawVertexShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [screenDrawVertexShader]
+    });
+  }
+
+  static getScreenDrawFragmentShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [screenDrawFragmentShader]
+    });
+  }
 }

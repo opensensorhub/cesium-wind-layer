@@ -28,6 +28,8 @@ export class WindParticleSystem {
       this.computing.primitives.calculateGenTime,
       this.rendering.primitives.heatmap,
       this.rendering.primitives.segments,
+      this.rendering.primitives.trails,
+      this.rendering.primitives.screen
     ];
 
     return primitives;

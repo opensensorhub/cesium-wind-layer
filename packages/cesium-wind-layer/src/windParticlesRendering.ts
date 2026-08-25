@@ -1,4 +1,4 @@
-import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat } from 'cesium';
+import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
@@ -15,6 +15,7 @@ export class WindParticlesRendering {
   public colorTable: Texture;
   textures: ReturnType<typeof this.createRenderingTextures>;
   framebuffers: ReturnType<typeof this.createRenderingFramebuffers>;
+  private texSize = 14000
 
   constructor(context: any, options: WindLayerOptions, viewerParameters: any, computing: WindParticlesComputing) {
     this.context = context;
@@ -36,22 +37,28 @@ export class WindParticlesRendering {
   createRenderingTextures() {
     const colorTextureOptions = {
       context: this.context,
-      width: this.context.drawingBufferWidth,
-      height: this.context.drawingBufferHeight,
+      width: this.texSize,
+      height: this.texSize,
       pixelFormat: PixelFormat.RGBA,
       pixelDatatype: PixelDatatype.UNSIGNED_BYTE
     };
     const depthTextureOptions = {
       context: this.context,
-      width: this.context.drawingBufferWidth,
-      height: this.context.drawingBufferHeight,
+      width: this.texSize,
+      height: this.texSize,
       pixelFormat: PixelFormat.DEPTH_COMPONENT,
       pixelDatatype: PixelDatatype.UNSIGNED_INT
     };
 
     return {
       segmentsColor: new Texture(colorTextureOptions),
-      segmentsDepth: new Texture(depthTextureOptions)
+      segmentsDepth: new Texture(depthTextureOptions),
+
+      //use 2 for ping-pong
+      currentTrailsColor: new Texture(colorTextureOptions),
+      currentTrailsDepth: new Texture(depthTextureOptions),
+      nextTrailsColor: new Texture(colorTextureOptions),
+      nextTrailsDepth: new Texture(depthTextureOptions),
     }
   }
 
@@ -61,6 +68,16 @@ export class WindParticlesRendering {
         context: this.context,
         colorTextures: [this.textures.segmentsColor],
         depthTexture: this.textures.segmentsDepth
+      }),
+      currentTrails: new Framebuffer({
+        context: this.context,
+        colorTextures: [this.textures.currentTrailsColor],
+        depthTexture: this.textures.currentTrailsDepth
+      }),
+      nextTrails: new Framebuffer({
+        context: this.context,
+        colorTextures: [this.textures.nextTrailsColor],
+        depthTexture: this.textures.nextTrailsDepth
       })
     }
   }
@@ -98,7 +115,7 @@ export class WindParticlesRendering {
   }
 
   createSegmentsGeometry(): Geometry {
-    const repeatVertex = 4, texureSize = this.options.particlesTextureSize;
+    const repeatVertex = 8, texureSize = this.options.particlesTextureSize;
     // 坐标系
     //  z
     //  | /y
@@ -124,7 +141,13 @@ export class WindParticlesRendering {
         -1, -1, 0,
         -1, 1, 0,
         1, -1, 0,
-        1, 1, 0
+        1, 1, 0,
+        
+        //double draw
+        -1, -1, 1,
+        -1, 1, 1,
+        1, -1, 1,
+        1, 1, 1
       )
     }
     normal = new Float32Array(normal);
@@ -135,7 +158,12 @@ export class WindParticlesRendering {
         // 第一个三角形用的顶点
         vertex + 0, vertex + 1, vertex + 2,
         // 第二个三角形用的顶点
-        vertex + 2, vertex + 1, vertex + 3
+        vertex + 2, vertex + 1, vertex + 3,
+
+        //double draw outside -180, 180
+        vertex + 4, vertex + 5, vertex + 6,
+        // 第二个三角形用的顶点
+        vertex + 6, vertex + 5, vertex + 7
       )
 
       vertex += repeatVertex;
@@ -184,6 +212,38 @@ export class WindParticlesRendering {
     });
   }
 
+  private getFullscreenQuad() {
+    const atts = new GeometryAttributes();
+    atts.position = new GeometryAttribute({
+					componentDatatype: ComponentDatatype.FLOAT,
+					componentsPerAttribute: 3,
+					//  v3----v2
+					//  |     |
+					//  |     |
+					//  v0----v1
+					values: new Float32Array([
+						-1, -1, 0, // v0
+						1, -1, 0, // v1
+						1, 1, 0, // v2
+						-1, 1, 0, // v3
+					])
+				});
+        atts.st = new GeometryAttribute({
+					componentDatatype: ComponentDatatype.FLOAT,
+					componentsPerAttribute: 2,
+					values: new Float32Array([
+						0, 0,
+						1, 0,
+						1, 1,
+						0, 1,
+					])
+			});
+		return new Geometry({
+			attributes: atts,
+      indices: new Uint32Array([3, 2, 0, 0, 2, 1])
+    });
+	}
+
   private createPrimitives() {
     const segments = new CustomPrimitive({
       commandType: 'Draw',
@@ -203,6 +263,8 @@ export class WindParticlesRendering {
         particleFadeOutTime: () => this.options.particleFadeOutTime,
         particlesSpeed: () => this.computing.particlesTextures.particlesSpeed,
         frameRateAdjustment: () => this.computing.frameRateAdjustment,
+        lonRange: () => new Cartesian2(this.computing.windData.bounds.west, this.computing.windData.bounds.east),
+        latRange: () => new Cartesian2(this.computing.windData.bounds.south, this.computing.windData.bounds.north),
         colorTable: () => this.colorTable,
         domain: () => {
           const domain = new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max);
@@ -233,6 +295,78 @@ export class WindParticlesRendering {
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
       rawRenderState: this.createRawRenderState({
+        viewport: {
+          height: this.texSize,
+          width: this.texSize
+        },
+        depthTest: {
+          enabled: false,
+          func: DepthFunction.GREATER
+        },
+        depthMask: false,
+        blending: {
+          enabled: false,
+        }
+      }),
+      framebuffer: this.framebuffers.segments,
+      autoClear: true
+    });
+
+    const trails = new CustomPrimitive({
+      commandType: 'Draw',
+      attributeLocations: {
+        position: 0,
+        st: 1
+      },
+      geometry: this.getFullscreenQuad(),
+      primitiveType: PrimitiveType.TRIANGLES,
+      uniformMap: {
+        trailsColor: () => this.framebuffers.currentTrails.getColorTexture(0),
+        segmentsColor: () => this.framebuffers.segments.getColorTexture(0)
+      },
+      vertexShaderSource: ShaderManager.getTrailsDrawVertexShader(),
+      fragmentShaderSource: ShaderManager.getTrailsDrawFragmentShader(),
+      rawRenderState: this.createRawRenderState({
+        viewport: {
+          height: this.texSize,
+          width: this.texSize
+        },
+        depthTest: {
+          enabled: false,
+          func: DepthFunction.ALWAYS
+        },
+        depthMask: false,
+        blending: {
+          enabled: false,
+        }
+      }),
+      preExecute: () => {
+        //swap framebuffers
+        const tmp = this.framebuffers.currentTrails;
+        this.framebuffers.currentTrails = this.framebuffers.nextTrails
+        this.framebuffers.nextTrails = tmp
+        if(this.primitives.trails.commandToExecute) {
+          this.primitives.trails.commandToExecute.framebuffer = this.framebuffers.nextTrails;
+        }
+        
+      },
+      framebuffer: this.framebuffers.nextTrails,
+    });
+
+    const screen = new CustomPrimitive({
+      commandType: 'Draw',
+      attributeLocations: {
+        position: 0,
+        st: 1
+      },
+      geometry: this.createHeatmapGeometry(),
+      primitiveType: PrimitiveType.TRIANGLES,
+      uniformMap: {
+        tex: () => this.framebuffers.nextTrails.getColorTexture(0),
+      },
+      vertexShaderSource: ShaderManager.getScreenDrawVertexShader(),
+      fragmentShaderSource: ShaderManager.getScreenDrawFragmentShader(),
+      rawRenderState: this.createRawRenderState({
         viewport: undefined,
         depthTest: {
           enabled: true
@@ -244,7 +378,7 @@ export class WindParticlesRendering {
           blendFuncSource: WebGLRenderingContext.SRC_ALPHA,
           blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
         }
-      })
+      }),
     });
 
     const heatmap = new CustomPrimitive({
@@ -280,7 +414,7 @@ export class WindParticlesRendering {
       })
     })
 
-    return { segments, heatmap };
+    return { segments, heatmap, screen, trails };
   }
 
   onParticlesTextureSizeChange() {
