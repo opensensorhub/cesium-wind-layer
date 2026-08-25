@@ -28,9 +28,6 @@ void main() {
 
     trail.a = floor(0.97 * 255.0 * trail.a) / 255.0;
 
-    vec3 blendedRGB = mix(trail.rgb, segment.rgb, segment.a);
-    float blendedAlpha = max(segment.a, trail.a);
-
-    fragColor = vec4(blendedRGB, blendedAlpha);
+    fragColor = max(trail, segment);
 }
 `;

@@ -37,8 +37,8 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointA, vec2 pointB, float widthOffse
     vec2 normalizedDirection = normalize(direction);
     vec2 normalVector = vec2(-normalizedDirection.y, normalizedDirection.x);
 
-    float quadWidth = 0.08;
-    float quadLength = 0.03;
+    float quadWidth = 0.07;
+    float quadLength = 0.05;
 
     return (normalizedDirection * lengthOffset * quadLength) + (normalVector * widthOffset * quadWidth);
 }
@@ -82,9 +82,6 @@ void main() {
     float speedLength = clamp(speed.b, domain.x, domain.y);
     float normalizedSpeed = (speedLength - domain.x) / (domain.y - domain.x);
     vec4 baseColor = texture(colorTable, vec2(normalizedSpeed, 0.0));
-
-    // 根据速度调整透明度
-    float speedAlpha = mix(0.3, 1.0, speed.a);
 
     // 组合颜色和透明度
     fragColor = vec4(baseColor.rgb * inRange, inRange);
