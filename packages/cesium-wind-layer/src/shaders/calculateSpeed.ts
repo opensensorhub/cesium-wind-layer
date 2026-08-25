@@ -36,50 +36,11 @@ vec2 mapPositionToNormalizedIndex2D(vec2 lonLat) {
     return normalizedIndex2D;
 }
 
-float getWindComponent(sampler2D componentTexture, vec2 lonLat) {
-    vec2 normalizedIndex2D = mapPositionToNormalizedIndex2D(lonLat);
-    float result = texture(componentTexture, normalizedIndex2D).r;
-    return result;
-}
-
 vec2 getWindComponents(vec2 lonLat) {
     vec2 normalizedIndex2D = mapPositionToNormalizedIndex2D(lonLat);
     float u = texture(U, normalizedIndex2D).r;
     float v = texture(V, normalizedIndex2D).r;
     return vec2(u, v);
-}
-
-vec2 bilinearInterpolation(vec2 lonLat) {
-    float lon = lonLat.x;
-    float lat = lonLat.y;
-
-    vec2 interval = getInterval(maximum, minimum, dimension);
-
-    // Calculate grid cell coordinates
-    float lon0 = floor(lon / interval.x) * interval.x;
-    float lon1 = lon0 + interval.x;
-    float lat0 = floor(lat / interval.y) * interval.y;
-    float lat1 = lat0 + interval.y;
-
-    // Get wind vectors at four corners
-    vec2 v00 = getWindComponents(vec2(lon0, lat0));
-    vec2 v10 = getWindComponents(vec2(lon1, lat0));
-    vec2 v01 = getWindComponents(vec2(lon0, lat1));
-    vec2 v11 = getWindComponents(vec2(lon1, lat1));
-
-    // Check if all wind vectors are zero
-    if (length(v00) == 0.0 && length(v10) == 0.0 && length(v01) == 0.0 && length(v11) == 0.0) {
-        return vec2(0.0, 0.0);
-    }
-
-    // Calculate interpolation weights
-    float s = (lon - lon0) / interval.x;
-    float t = (lat - lat0) / interval.y;
-
-    // Perform bilinear interpolation on vector components
-    vec2 v0 = mix(v00, v10, s);
-    vec2 v1 = mix(v01, v11, s);
-    return mix(v0, v1, t);
 }
 
 vec2 lengthOfLonLat(vec2 lonLat) {
@@ -117,9 +78,9 @@ vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
     const float h = 0.5;
 
     vec2 y_n = lonLat;
-    vec2 f_n = bilinearInterpolation(lonLat);
+    vec2 f_n = getWindComponents(lonLat);
     vec2 midpoint = y_n + 0.5 * h * convertSpeedUnitToLonLat(y_n, f_n) * speedScaleFactor;
-    vec2 speed = h * bilinearInterpolation(midpoint) * speedScaleFactor;
+    vec2 speed = h * getWindComponents(midpoint) * speedScaleFactor;
 
     return speed;
 }
@@ -127,14 +88,12 @@ vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
 
 vec2 calculateWindNorm(vec2 speed) {
     float speedLength = length(speed.xy);
-    if(speedLength == 0.0){
-      return vec2(0.0);
-    }
+    bool isSpeedZero = speedLength == 0.0;
 
     // Clamp speedLength to range
     float clampedSpeed = clamp(speedLength, speedRange.x, speedRange.y);
     float normalizedSpeed = (clampedSpeed - speedRange.x) / (speedRange.y - speedRange.x);
-    return vec2(speedLength, normalizedSpeed);
+    return vec2(speedLength, normalizedSpeed) * float(!isSpeedZero);
 }
 
 out vec4 fragColor;
@@ -142,7 +101,7 @@ out vec4 fragColor;
 void main() {
     // texture coordinate must be normalized
     vec2 lonLat = texture(currentParticlesPosition, v_textureCoordinates).rg;
-    vec2 speedOrigin = bilinearInterpolation(lonLat);
+    vec2 speedOrigin = getWindComponents(lonLat);
     vec2 speed = calculateSpeedByRungeKutta2(lonLat) * frameRateAdjustment;
     vec2 speedInLonLat = convertSpeedUnitToLonLat(lonLat, speed);
 
