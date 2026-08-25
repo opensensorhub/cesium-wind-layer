@@ -93,6 +93,6 @@ void main() {
     float speedAlpha = mix(0.3, 1.0, speed.a);
 
     // 组合颜色和透明度
-    fragColor = vec4(baseColor.rgb * inRange, inRange);
+    fragColor = vec4(baseColor.rgb * inRange, inRange * opacity);
 }
 `;
