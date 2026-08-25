@@ -67,40 +67,6 @@ vec2 generateRandomParticle(vec2 seed) {
     return vec2(randomLon, randomLat);
 }
 
-bool longitudeOutside(float lon, float west, float east) {
-    if (west <= east) {
-        return (lon < west || lon > east) && east - west != 360.0;
-    }
-
-    // crosses antimeridian
-    return lon < west && lon > east && east - west + 360.0 != 360.0;
-}
-
-
-bool particleOutbound(vec2 particle) {
-
-    float minLat;
-    float maxLat;
-    float minLon;
-    float maxLon;
-
-    if (useViewerBounds) {
-        minLat = latRange.x;
-        maxLat = latRange.y;
-        minLon = lonRange.x;
-        maxLon = lonRange.y;
-    } else {
-        minLat = dataLatRange.x;
-        maxLat = dataLatRange.y;
-        minLon = dataLonRange.x;
-        maxLon = dataLonRange.y;
-    }
-
-    return particle.y < minLat ||
-           particle.y > maxLat ||
-           longitudeOutside(particle.x, minLon, maxLon);
-}
-
 out vec4 fragColor;
 
 void main() {
@@ -116,10 +82,12 @@ void main() {
     
     float randomNumber = rand(seed2, normalRange);
 
-    if (deltaTime > particleGenTime.y || particleOutbound(nextParticle)) {
+    if (deltaTime > particleGenTime.y) {
         vec2 randomParticle = generateRandomParticle(seed1);
         fragColor = vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
     } else {
+        //wrap arround dateline
+        nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
         fragColor = vec4(nextParticle, 0.0, 0.0);
     }
 }

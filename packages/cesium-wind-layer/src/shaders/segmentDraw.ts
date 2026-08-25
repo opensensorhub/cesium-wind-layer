@@ -56,12 +56,7 @@ void main() {
 
     vec2 newLatLon = currentPosition.xy + rotatedOffset;
 
-    //wrap 2nd set of geometry outside bounds
-    newLatLon.x -= normal.z * sign(newLatLon.x) * 360.0;
-
     gl_Position = vec4(projectLonLat(newLatLon), float(gl_InstanceID), 1.0);
-
-    gl_Position.x += normal.z * float(abs(currentPosition.x) < 170.0) * 3.0;
 
     gl_Position.x += isAnyRandomPointUsed * 3.0;
 }
