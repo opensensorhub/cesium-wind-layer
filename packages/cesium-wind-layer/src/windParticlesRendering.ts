@@ -142,12 +142,6 @@ export class WindParticlesRendering {
         -1, 1, 0,
         1, -1, 0,
         1, 1, 0,
-        
-        // //double draw
-        // -1, -1, 1,
-        // -1, 1, 1,
-        // 1, -1, 1,
-        // 1, 1, 1
       )
     }
     normal = new Float32Array(normal);
@@ -159,11 +153,6 @@ export class WindParticlesRendering {
         vertex + 0, vertex + 1, vertex + 2,
         // 第二个三角形用的顶点
         vertex + 2, vertex + 1, vertex + 3,
-
-        // //double draw outside -180, 180
-        // vertex + 4, vertex + 5, vertex + 6,
-        // // 第二个三角形用的顶点
-        // vertex + 6, vertex + 5, vertex + 7
       )
 
       vertex += repeatVertex;
