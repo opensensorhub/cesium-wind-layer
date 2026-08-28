@@ -42,20 +42,76 @@ float hannFade(float x, float f0, float f1, float L) {
     return float(x > 0.0 && x <= f0) * fadeIn(x, L, f0) + float(x > f0 && x <=  L - f1) + float(x > L-f1 && x <= L) * fadeOut(x, L, f1);
 }
 
-vec2 projectLonLat(vec2 lonLat) {
+vec2 projectLonLatToTextureSpace(vec2 lonLat) {
     return (vec2((lonLat.x - lonRange.x)/(lonRange.y - lonRange.x), (lonLat.y - latRange.x)/(latRange.y - latRange.x)) * 2.0) - 1.0;
 }
 
-vec2 calculateOffsetOnNormalDirection(vec2 pointA, vec2 pointB, float widthOffset, float lengthOffset) {
+vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
+    float a = 6378137.0;
+    float b = 6356752.3142;
+    float e2 = 6.69437999014e-3;
+
+    float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
+    float h = 0.0;
     
-    vec2 direction = pointB - pointA;
-    vec2 normalizedDirection = normalize(direction);
-    vec2 normalVector = vec2(-normalizedDirection.y, normalizedDirection.x);
+    vec3 cartesian;
+    cartesian.x = (N_Phi + h) * cosLat * cosLon;
+    cartesian.y = (N_Phi + h) * cosLat * sinLon;
+    cartesian.z = ((b * b) / (a * a) * N_Phi + h) * sinLat;
+    
+    return cartesian;
+}
 
-    float quadWidth = 0.07;
-    float quadLength = 0.12;
+vec2 ecefToLonLat(vec3 ecef) {
+    const float e2 = 6.69437999014e-3;
+    const float radToDeg = 57.29577951308232; // 180.0 / PI
 
-    return (normalizedDirection * lengthOffset * quadLength) + (normalVector * widthOffset * quadWidth);
+    float p = length(ecef.xy);
+
+    // Branchless / safe longitude and latitude calculation
+    float lonRad = atan(ecef.y, ecef.x);
+    float latRad = atan(ecef.z, p * (1.0 - e2));
+
+    return vec2(lonRad * radToDeg, latRad * radToDeg);
+}
+
+mat4 createEnuToECEFTransformationMatrix(float sinLon, float cosLon, float sinLat, float cosLat, vec3 origin) {
+    //https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
+    //had to change to use 4d matrix for translation
+    vec4 e_hat = vec4(-sinLon, cosLon, 0.0, 1.0);
+    vec4 n_hat = vec4(-cosLon * sinLat, -sinLon * sinLat, cosLat, 1.0);
+    vec4 u_hat = vec4(cosLon * cosLat,  sinLon * cosLat, sinLat, 1.0);
+
+    return mat4(
+        e_hat,
+        n_hat,
+        u_hat,
+        vec4(origin, 1.0)
+    );
+}
+
+vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float lengthOffset) {
+
+    float lon = radians(pointALonLat.x);
+    float lat = radians(pointALonLat.y);
+
+    float sinLon = sin(lon);
+    float cosLon = cos(lon);
+    float sinLat = sin(lat);
+    float cosLat = cos(lat);
+
+    vec3 pointA = lonLatToECEF(sinLon, cosLon, sinLat, cosLat);
+    vec3 pointB = lonLatToECEF(sinLon, cosLon, sinLat, cosLat);
+
+    mat4 enuToECEF = createEnuToECEFTransformationMatrix(sinLon, cosLon, sinLat, cosLat, pointA);
+
+    float quadWidthMeters = 5000.0;
+    float quadLengthMeters = 5000.0;
+
+    //TODO rotate quad to point in direction of particle
+    vec4 enuOffset = vec4(widthOffset * quadWidthMeters, lengthOffset * quadLengthMeters, 0.0, 1.0);
+
+    return ecefToLonLat((enuToECEF * enuOffset).xyz);
 }
 
 void main() {
@@ -67,13 +123,13 @@ void main() {
     
     float isAnyRandomPointUsed = nextPosition.w + currentPosition.w;
 
-    vec2 rotatedOffset = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x);
+    vec2 newLatLon = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x);
 
-    vec2 newLatLon = currentPosition.xy + rotatedOffset;
+    bool isCrossingDateline = abs(nextPosition.x - currentPosition.x) > 180.0 || abs(newLatLon.x - currentPosition.x) > 180.0;
 
-    gl_Position = vec4(projectLonLat(newLatLon), float(gl_InstanceID), 1.0);
+    float isDiscard = float(isCrossingDateline || isAnyRandomPointUsed > 0.0);
 
-    gl_Position.x += isAnyRandomPointUsed * 3.0;
+    gl_Position = vec4(projectLonLatToTextureSpace(newLatLon), 0.0, 1.0) * (1.0/(1.0 - isDiscard));
 
     vec2 particleGenTime = texture(particlesGenTime, particleIndex).rg;
 
