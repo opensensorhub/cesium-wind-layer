@@ -62,17 +62,33 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     return cartesian;
 }
 
+//https://hal.science/hal-01704943v2/document
 vec2 ecefToLonLat(vec3 ecef) {
+    const float a = 6378137.0;
+    const float b = 6356752.3142;
     const float e2 = 6.69437999014e-3;
-    const float radToDeg = 57.29577951308232; // 180.0 / PI
 
-    float p = length(ecef.xy);
-
-    // Branchless / safe longitude and latitude calculation
+    float w = length(ecef.xy);
+    float l = e2/2.0;
+    float m = (w*w)/(a*a);
+    float n = pow(((1.0-e2)* ecef.z)/b, 2.0);
+    float i = -((2.0*l*l) + m + n)/2.0;
+    float k = (l * l)*((l * l) - m - n);
+    float mnl2 = m * n * l * l;
+    float q = (pow(m + n - (4.0*l*l), 3.0)/216.0) + mnl2;
+    float D = sqrt(((2.0 * q) - mnl2)*mnl2);
+    float B = (i/3.0) - (sign(q + D) * pow(abs(q + D), 1.0/3.0)) - (sign(q - D)*pow(abs(q - D), 1.0/3.0));
+    float t = sqrt(sqrt((B*B) - k) - ((B+i)/2.0)) - (sign(m-n) * sqrt((B-i)/2.0));
+    float w1 = w/(t+l);
+    float z1 = ((1.0-e2)*ecef.z)/(t-l);
+    float latRad = atan(z1, (1.0-e2)*w1);
+    if(w == 0.0) {
+        latRad = sign(ecef.z) * (czm_pi/2.0);
+    }
+    
     float lonRad = atan(ecef.y, ecef.x);
-    float latRad = atan(ecef.z, p * (1.0 - e2));
 
-    return vec2(lonRad * radToDeg, latRad * radToDeg);
+    return vec2(degrees(lonRad), degrees(latRad));
 }
 
 //https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
@@ -100,6 +116,7 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
 
     // create rotation matrices to convert ecef -> enu and vice versa
     // up vector will match vector A in this case
+    //tangent plane runs through origin in ECEF coords
     mat3 enuToEcefRot = createEnuToECEFRot(sinLonA, cosLonA, sinLatA, cosLatA);
     mat3 ecefToEnuRot = transpose(enuToEcefRot);
 
@@ -111,7 +128,7 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     vec2 length = normalize(pointBEnu - pointAEnu).xy;
     vec2 width = vec2(-length.y, length.x);
 
-    float quadWidthMeters = 5000.0;
+    float quadWidthMeters = 10000.0;
     float quadLengthMeters = 5000.0;
 
     vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters) + (length * lengthOffset * quadLengthMeters), 0.0);
