@@ -75,43 +75,48 @@ vec2 ecefToLonLat(vec3 ecef) {
     return vec2(lonRad * radToDeg, latRad * radToDeg);
 }
 
-mat4 createEnuToECEFTransformationMatrix(float sinLon, float cosLon, float sinLat, float cosLat, vec3 origin) {
-    //https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
-    //had to change to use 4d matrix for translation
-    vec4 e_hat = vec4(-sinLon, cosLon, 0.0, 1.0);
-    vec4 n_hat = vec4(-cosLon * sinLat, -sinLon * sinLat, cosLat, 1.0);
-    vec4 u_hat = vec4(cosLon * cosLat,  sinLon * cosLat, sinLat, 1.0);
+//https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
+mat3 createEnuToECEFRot(float sinLon, float cosLon, float sinLat, float cosLat) {
+    vec3 e = vec3(-sinLon, cosLon, 0.0);
+    vec3 n = vec3(-cosLon * sinLat, -sinLon * sinLat, cosLat);
+    vec3 u = vec3(cosLon * cosLat, sinLon * cosLat, sinLat);
 
-    return mat4(
-        e_hat,
-        n_hat,
-        u_hat,
-        vec4(origin, 1.0)
-    );
+    return mat3(e, n, u);
 }
 
 vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float lengthOffset) {
+    float lonA = radians(pointALonLat.x);
+    float latA = radians(pointALonLat.y);
+    float lonB = radians(pointBLonLat.x);
+    float latB = radians(pointBLonLat.y);
 
-    float lon = radians(pointALonLat.x);
-    float lat = radians(pointALonLat.y);
+    float sinLonA = sin(lonA);
+    float cosLonA = cos(lonA);
+    float sinLatA = sin(latA);
+    float cosLatA = cos(latA);
 
-    float sinLon = sin(lon);
-    float cosLon = cos(lon);
-    float sinLat = sin(lat);
-    float cosLat = cos(lat);
+    vec3 pointA = lonLatToECEF(sinLonA, cosLonA, sinLatA, cosLatA);
+    vec3 pointB = lonLatToECEF(sin(lonB), cos(lonB), sin(latB), cos(latB));
 
-    vec3 pointA = lonLatToECEF(sinLon, cosLon, sinLat, cosLat);
-    vec3 pointB = lonLatToECEF(sinLon, cosLon, sinLat, cosLat);
+    // create rotation matrices to convert ecef -> enu and vice versa
+    // up vector will match vector A in this case
+    mat3 enuToEcefRot = createEnuToECEFRot(sinLonA, cosLonA, sinLatA, cosLatA);
+    mat3 ecefToEnuRot = transpose(enuToEcefRot);
 
-    mat4 enuToECEF = createEnuToECEFTransformationMatrix(sinLon, cosLon, sinLat, cosLat, pointA);
+    //do vector rotations
+    vec3 pointAEnu = ecefToEnuRot * pointA;
+    vec3 pointBEnu = ecefToEnuRot * pointB;
+
+    //get head and side vector of quad
+    vec2 length = normalize(pointBEnu - pointAEnu).xy;
+    vec2 width = vec2(-length.y, length.x);
 
     float quadWidthMeters = 5000.0;
     float quadLengthMeters = 5000.0;
 
-    //TODO rotate quad to point in direction of particle
-    vec4 enuOffset = vec4(widthOffset * quadWidthMeters, lengthOffset * quadLengthMeters, 0.0, 1.0);
+    vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters) + (length * lengthOffset * quadLengthMeters), 0.0);
 
-    return ecefToLonLat((enuToECEF * enuOffset).xyz);
+    return ecefToLonLat(pointA + (enuToEcefRot * offsetEnu));
 }
 
 void main() {
@@ -129,7 +134,7 @@ void main() {
 
     float isDiscard = float(isCrossingDateline || isAnyRandomPointUsed > 0.0);
 
-    gl_Position = vec4(projectLonLatToTextureSpace(newLatLon), 0.0, 1.0) * (1.0/(1.0 - isDiscard));
+    gl_Position = vec4(projectLonLatToTextureSpace(newLatLon), 0.0, 1.0) * (1.0/(1.0 - isDiscard)); //returns NaN and discards triangle if marked to be discarded
 
     vec2 particleGenTime = texture(particlesGenTime, particleIndex).rg;
 
