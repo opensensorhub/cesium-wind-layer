@@ -95,7 +95,6 @@ export class WindLayer {
   options: WindLayerOptions;
   private particleSystem: WindParticleSystem;
   private viewerParameters: {
-    viewBounds: Rectangle|undefined;
     dataBounds: Rectangle;
     pixelSize: number;
     sceneMode: SceneMode;
@@ -131,7 +130,6 @@ export class WindLayer {
     this.screenSamples = []
     this.updateScreenSamples();
     this.viewerParameters = {
-      viewBounds: new Rectangle(-180, -90, 180, 90),
       dataBounds: Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north),
       pixelSize: 1000.0,
       sceneMode: this.scene.mode
@@ -143,15 +141,6 @@ export class WindLayer {
     this.add();
 
     this.setupEventListeners();
-
-    // this.entity = viewer.entities.add({
-    //   rectangle: {
-    //     coordinates: this.viewerParameters.viewBounds,
-    //     material: Color.RED.withAlpha(0.2),
-    //     outline: true,
-    //     outlineColor: Color.YELLOW
-    //   }
-    // });
   }
 
   private setupEventListeners(): void {
