@@ -8,6 +8,7 @@
   },
   "include": [
     "src",
-    "src/cesium-extensions.d.ts"
+    "src/cesium-extensions.d.ts",
+    "src/glsl.d.ts"
   ]
 }

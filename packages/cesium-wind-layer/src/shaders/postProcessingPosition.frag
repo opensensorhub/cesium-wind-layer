@@ -1,4 +1,4 @@
-export const postProcessingPositionFragmentShader = /*glsl*/`#version 300 es
+#version 300 es
 precision highp float;
 
 uniform sampler2D nextParticlesPosition;
@@ -73,4 +73,3 @@ void main() {
     nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
     fragColor += isNotExpired * vec4(nextParticle, 0.0, 0.0);
 }
-`;

@@ -1,53 +1,56 @@
 import { ShaderSource } from 'cesium';
-import { updatePositionShader } from './shaders/updatePosition';
-import { calculateSpeedShader } from './shaders/calculateSpeed';
-import { postProcessingPositionFragmentShader } from './shaders/postProcessingPosition';
-import { renderParticlesFragmentShader, renderParticlesVertexShader } from './shaders/segmentDraw';
-import { calculateGenTimeShader } from './shaders/calculateGenTime'
-import { renderHeatmapVertexShader, renderHeatmapFragmentShader } from './shaders/HeatmapDraw';
-import { renderTrailsFragmentShader, renderTrailsVertexShader } from './shaders/trailsDraw';
-import { screenDrawFragmentShader, screenDrawVertexShader } from './shaders/screenDraw';
+import updatePosition from './shaders/updatePosition.frag';
+import calculateSpeed  from './shaders/calculateSpeed.frag';
+import postProcessingPosition from './shaders/postProcessingPosition.frag';
+import segmentDrawFrag from './shaders/segmentDraw.frag';
+import segmentDrawVert from './shaders/segmentDraw.vert';
+import calculateGenTime from './shaders/calculateGenTime.frag'
+import renderHeatmapFragmentShader from './shaders/HeatmapDraw.frag';
+import renderTrailsFragmentShader from './shaders/trailsDraw.frag';
+import renderTrailsVertexShader from './shaders/trailsDraw.vert';
+import screenDrawFragmentShader from './shaders/screenDraw.frag';
+import screenDrawVertexShader from './shaders/screenDraw.vert';
 
 export class ShaderManager {
   static getCalculateSpeedShader(): ShaderSource {
     return new ShaderSource({
-      sources: [calculateSpeedShader]
+      sources: [calculateSpeed]
     });
   }
 
   static getUpdatePositionShader(): ShaderSource {
     return new ShaderSource({
-      sources: [updatePositionShader]
+      sources: [updatePosition]
     });
   }
 
   static getSegmentDrawVertexShader(): ShaderSource {
     return new ShaderSource({
-      sources: [renderParticlesVertexShader]
+      sources: [segmentDrawVert]
     });
   }
 
   static getSegmentDrawFragmentShader(): ShaderSource {
     return new ShaderSource({
-      sources: [renderParticlesFragmentShader]
+      sources: [segmentDrawFrag]
     });
   }
 
   static getPostProcessingPositionShader(): ShaderSource {
     return new ShaderSource({
-      sources: [postProcessingPositionFragmentShader]
+      sources: [postProcessingPosition]
     });
   }
 
   static getCalculateGenTimeShader(): ShaderSource {
     return new ShaderSource({
-      sources: [calculateGenTimeShader]
+      sources: [calculateGenTime]
     });
   }
 
   static getHeatmapVertexShader(): ShaderSource {
     return new ShaderSource({
-      sources: [renderHeatmapVertexShader]
+      sources: [screenDrawVertexShader]
     });
   }
 

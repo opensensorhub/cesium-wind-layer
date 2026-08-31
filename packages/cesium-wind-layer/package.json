@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "cesium": "^1.136.0",
+    "esbuild-plugin-glsl": "^1.4.2",
     "tsup": "^8.0.2",
     "typescript": "^5.5.3"
   },

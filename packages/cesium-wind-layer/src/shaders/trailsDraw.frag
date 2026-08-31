@@ -1,18 +1,4 @@
-export const renderTrailsVertexShader = /*glsl*/`#version 300 es
-precision highp float;
-
-in vec3 position;
-in vec2 st;
-
-out vec2 textureCoordinate;
-
-void main() {
-    textureCoordinate = st;
-    gl_Position = vec4(position, 1.0);
-}
-`;
-
-export const renderTrailsFragmentShader = /*glsl*/`#version 300 es
+#version 300 es
 precision highp float;
 
 in vec2 textureCoordinate;
@@ -30,4 +16,3 @@ void main() {
 
     fragColor = max(trail, segment);
 }
-`;

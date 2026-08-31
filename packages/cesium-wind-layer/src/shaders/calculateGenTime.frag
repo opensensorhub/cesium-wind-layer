@@ -1,4 +1,7 @@
-export const calculateGenTimeShader = /*glsl*/`#version 300 es
+#version 300 es
+
+precision highp float;
+
 uniform float currentTime;
 uniform sampler2D currentParticlesPosition;
 uniform sampler2D prevParticlesGenTime;
@@ -31,4 +34,3 @@ void main() {
     float timeOffset = rand(seed, vec2(0.0, 1000.0));
     fragColor = float(isRandom > 0.0) * vec4(currentTime + timeOffset, particleLifeTime + timeOffset, 0.0, 0.0) + float(isRandom <= 0.0) * vec4(prevGenTime.x, prevGenTime.y, 0.0, 0.0); 
 }
-`;

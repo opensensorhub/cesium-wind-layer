@@ -1,4 +1,4 @@
-export const updatePositionShader = /*glsl*/`#version 300 es
+#version 300 es
 precision highp float;
 
 uniform sampler2D currentParticlesPosition;
@@ -19,4 +19,3 @@ void main() {
     // 将新的位置写入 fragColor
     fragColor = vec4(nextPos, 0.0, 1.0);
 }
-`;

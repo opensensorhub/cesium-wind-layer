@@ -3,7 +3,6 @@ import {
   Scene,
   Cartesian2,
   SceneMode,
-  Math as CesiumMath,
   Rectangle,
   Entity,
 } from 'cesium';

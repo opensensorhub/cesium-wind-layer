@@ -1,4 +1,6 @@
-export const calculateSpeedShader = /*glsl*/`#version 300 es
+#version 300 es
+
+precision highp float;
 
 // the size of UV textures: width = lon, height = lat
 uniform sampler2D U; // eastward wind
@@ -107,4 +109,3 @@ void main() {
 
     fragColor = vec4(speedInLonLat, calculateWindNorm(speedOrigin));
 }
-`;
