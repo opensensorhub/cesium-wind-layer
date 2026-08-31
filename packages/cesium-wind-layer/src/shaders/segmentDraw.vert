@@ -5,11 +5,21 @@ in vec2 st;
 in vec3 normal;
 
 #ifndef czm_pi
-// VS Code linter sees this, but Cesium injects its own version later
 #define czm_pi 3.141592653589793
 #endif
 
-uniform sampler2D previousParticlesPosition;
+#ifndef a
+#define a 6378137.0
+#endif
+
+#ifndef b
+#define b 6356752.3142
+#endif
+
+#ifndef e2
+#define e2 6.69437999014e-3
+#endif
+
 uniform sampler2D currentParticlesPosition;
 uniform sampler2D postProcessingPosition;
 uniform sampler2D particlesSpeed;
@@ -52,10 +62,6 @@ vec2 projectLonLatToTextureSpace(vec2 lonLat) {
 }
 
 vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
-    float a = 6378137.0;
-    float b = 6356752.3142;
-    float e2 = 6.69437999014e-3;
-
     float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
     float h = 0.0;
     
@@ -69,9 +75,6 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
 
 //https://hal.science/hal-01704943v2/document
 vec2 ecefToLonLat(vec3 ecef) {
-    const float a = 6378137.0;
-    const float b = 6356752.3142;
-    const float e2 = 6.69437999014e-3;
 
     float w = length(ecef.xy);
     float l = e2/2.0;
@@ -87,9 +90,9 @@ vec2 ecefToLonLat(vec3 ecef) {
     float w1 = w/(t+l);
     float z1 = ((1.0-e2)*ecef.z)/(t-l);
     float latRad = atan(z1, (1.0-e2)*w1);
-    if(w == 0.0) {
-        latRad = sign(ecef.z) * (czm_pi/2.0);
-    }
+    // if(w == 0.0) {
+    //     latRad = sign(ecef.z) * (czm_pi/2.0);
+    // }
     
     float lonRad = atan(ecef.y, ecef.x);
 
