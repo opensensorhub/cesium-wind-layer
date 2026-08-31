@@ -61,10 +61,6 @@ export interface WindLayerOptions {
    */
   colors: string[];
   /**
-   * Whether to use the viewer bounds to generate particles. Default is false.
-   */
-  useViewerBounds?: boolean;
-  /**
    * Controls the speed rendering range. Default is undefined.
    * @property {number} [min] - Minimum speed value for rendering
    * @property {number} [max] - Maximum speed value for rendering

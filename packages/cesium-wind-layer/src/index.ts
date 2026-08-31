@@ -26,7 +26,6 @@ export const DefaultOptions: WindLayerOptions = {
   lineLength: { min: 20, max: 100 },
   colors: ['white'],
   flipY: false,
-  useViewerBounds: false,
   domain: undefined,
   displayRange: undefined,
   dynamic: true,
@@ -120,7 +119,6 @@ export class WindLayer {
    * @param {number} [options.speedFactor=1.0] - Factor to adjust the speed of particles.
    * @param {string[]} [options.colors=['white']] - Array of colors for particles. Can be used to create color gradients.
    * @param {boolean} [options.flipY=false] - Whether to flip the Y-axis of the wind data.
-   * @param {boolean} [options.useViewerBounds=false] - Whether to use the viewer bounds to generate particles.
    * @param {boolean} [options.dynamic=true] - Whether to enable dynamic particle animation.
    */
   constructor(viewer: Viewer, windData: WindData, options?: Partial<WindLayerOptions>) {
@@ -158,8 +156,6 @@ export class WindLayer {
 
   private setupEventListeners(): void {
     this.viewer.camera.percentageChanged = 0.01;
-    this.viewer.camera.moveEnd.addEventListener(this.moveEnd.bind(this));
-    this.viewer.camera.moveStart.addEventListener(this.moveStart.bind(this));
     this.scene.morphComplete.addEventListener(this.updateViewerParameters.bind(this));
     window.addEventListener("resize", () => {
       this.updateScreenSamples.bind(this);
@@ -168,23 +164,8 @@ export class WindLayer {
   }
 
   private removeEventListeners(): void {
-    this.viewer.camera.moveEnd.removeEventListener(this.moveEnd.bind(this));
-    this.viewer.camera.moveStart.removeEventListener(this.moveStart.bind(this));
     this.scene.morphComplete.removeEventListener(this.updateViewerParameters.bind(this));
     window.removeEventListener("resize", this.updateViewerParameters.bind(this));
-  }
-
-  private moveStart(): void {
-    if(this.options.useViewerBounds) {
-      this.particleSystem.clearParticles()
-    }
-  }
-
-  private moveEnd(): void {
-    this.updateViewerParameters()
-    if(this.options.useViewerBounds) {
-      this.particleSystem.computing.createParticlesTextures();
-    }
   }
 
   private updateScreenSamples() {
@@ -304,70 +285,6 @@ export class WindLayer {
   }
 
   private updateViewerParameters(): void {
-
-    if(this.options.useViewerBounds) {
-      
-      const viewBoundsSamples = this.screenSamples.map(val => this.viewer.camera.pickEllipsoid(val, this.scene.ellipsoid))
-      .filter(val => val != undefined);
-
-      if(viewBoundsSamples.length >= 4) {
-        const screenBounds = Rectangle.fromCartesianArray(viewBoundsSamples)
-
-        //bug with Rectangle.intersection when crossing antimeridian
-        //workaround is to separate rectangles west and east of antimeridian, perform 2 intersections and rejoin
-        //https://github.com/CesiumGS/cesium/issues/2195
-        if(screenBounds.west > screenBounds.east) {
-          const westR = screenBounds.clone()
-          westR.east = CesiumMath.PI
-          const eastR = screenBounds.clone()
-          eastR.west = -CesiumMath.PI
-          
-          const westI = Rectangle.intersection(westR, this.viewerParameters.dataBounds)
-          const eastI = Rectangle.intersection(eastR, this.viewerParameters.dataBounds)
-
-          // for west, if no intersection with west rect, check the east rect
-          // vice versa for east value
-          //if no intersection with either, 0
-          //for north south, take first non-null value, otherwise 0
-          this.viewerParameters.viewBounds = new Rectangle(westI ? westI.west : eastI ? eastI.west : 0,
-            westI ? westI.south : eastI ? eastI.south : 0,
-            eastI ? eastI.east : westI ? westI.east : 0, 
-            westI ? westI.north : eastI ? eastI.north : 0)
-
-        } else {
-          this.viewerParameters.viewBounds = Rectangle.intersection(screenBounds, this.viewerParameters.dataBounds);
-        }
-        
-      }
-    }
-
-    // // Add 5% buffer to lonRange and latRange
-    // const lonBuffer = (lonRange.y - lonRange.x) * 0.05;
-    // const latBuffer = (latRange.y - latRange.x) * 0.05;
-
-    // lonRange.x = Math.max(this.windData.bounds.west, lonRange.x - lonBuffer);
-    // lonRange.y = Math.min(this.windData.bounds.east, lonRange.y + lonBuffer);
-    // latRange.x = Math.max(this.windData.bounds.south, latRange.x - latBuffer);
-    // latRange.y = Math.min(this.windData.bounds.north, latRange.y + latBuffer);
-    //console.debug(this.viewer.ellipsoid.surfaceArea(viewBounds))
-
-    // Calculate pixelSize based on the visible range
-    const dataLonRange = this.windData.bounds.east < this.windData.bounds.west ? this.windData.bounds.west - (this.windData.bounds.east + 360) : this.windData.bounds.east - this.windData.bounds.west;
-    const dataLatRange = this.windData.bounds.north - this.windData.bounds.south;
-
-    // Calculate the ratio of visible area to total data area based on the shortest side
-    if(this.viewerParameters.viewBounds) {
-      const visibleRatioLon = (this.viewerParameters.viewBounds.east - this.viewerParameters.viewBounds.west) / CesiumMath.toRadians(dataLonRange);
-      const visibleRatioLat = (this.viewerParameters.viewBounds.north - this.viewerParameters.viewBounds.south) / CesiumMath.toRadians(dataLatRange);
-      const visibleRatio = Math.min(visibleRatioLon, visibleRatioLat);
-
-      // Map the ratio to a pixelSize value between 0 and 1000
-      const pixelSize = 1000 * visibleRatio;
-      if (pixelSize > 0) {
-        this.viewerParameters.pixelSize = Math.max(0, Math.min(1000, pixelSize));
-      }
-    }
-
     this.viewerParameters.sceneMode = this.scene.mode;
     this.particleSystem?.applyViewerParameters(this.viewerParameters);
   }

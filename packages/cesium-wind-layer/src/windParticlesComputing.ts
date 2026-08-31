@@ -199,14 +199,11 @@ export class WindParticlesComputing {
           particlesSpeed: () => this.particlesTextures.particlesSpeed,
           particlesGenTime: () => this.particlesTextures.particlesGenTime,
           currentTime: () => performance.now(),
-          lonRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.west), CesiumMath.toDegrees(this.viewerParameters.viewBounds.east)),
-          latRange: () => !this.viewerParameters.viewBounds ? new Cartesian2(0,0) : new Cartesian2(CesiumMath.toDegrees(this.viewerParameters.viewBounds.south), CesiumMath.toDegrees(this.viewerParameters.viewBounds.north)),
-          dataLonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
-          dataLatRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
+          lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
+          latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
           randomCoefficient: function () {
             return Math.random();
-          },
-          useViewerBounds: () => this.options.useViewerBounds
+          }
         },
         fragmentShaderSource: ShaderManager.getPostProcessingPositionShader(),
         outputTexture: this.particlesTextures.postProcessingPosition,

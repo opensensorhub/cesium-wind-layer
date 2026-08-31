@@ -9,16 +9,9 @@ uniform sampler2D particlesSpeed; // (u, v, norm)
 uniform vec2 lonRange;
 uniform vec2 latRange;
 
-// range (min, max)
-uniform vec2 dataLonRange;
-uniform vec2 dataLatRange;
-
 uniform float currentTime;
 uniform float maxTimeDelta;
 uniform float randomCoefficient;
-
-// 添加新的 uniform 变量
-uniform bool useViewerBounds;
 
 in vec2 v_textureCoordinates;
 
@@ -51,20 +44,7 @@ float randomLongitude(vec2 seed, vec2 range)
 }
 
 vec2 generateRandomParticle(vec2 seed) {
-    vec2 range;
-    float randomLon, randomLat;
-    
-    if (useViewerBounds) {
-        // 在当前视域范围内生成粒子
-        randomLon = randomLongitude(seed, lonRange);
-        randomLat = rand(-seed, latRange);
-    } else {
-        // 在数据范围内生成粒子
-        randomLon = randomLongitude(seed, dataLonRange);
-        randomLat = rand(-seed, dataLatRange);
-    }
-
-    return vec2(randomLon, randomLat);
+    return vec2(randomLongitude(seed, lonRange), rand(-seed, latRange));
 }
 
 out vec4 fragColor;
