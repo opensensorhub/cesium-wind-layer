@@ -28,10 +28,6 @@ uniform sampler2D particlesGenTime;
 uniform float currentTime;
 uniform float particleFadeInTime;
 uniform float particleFadeOutTime;
-uniform float frameRateAdjustment;
-uniform float particleHeight;
-uniform float aspect;
-uniform float pixelSize;
 uniform vec2 lineWidth;
 uniform vec2 lineLength;
 uniform vec2 domain;
@@ -42,6 +38,10 @@ uniform vec2 lonRange;
 // 添加输出变量传递给片元着色器
 out vec4 speed;
 out float timeAlpha;
+
+float normalizeMinMax(float val, float min, float max) {
+    return (val - min)/(max - min);
+}
 
 //https://en.wikipedia.org/wiki/Hann_function
 //https://www.desmos.com/calculator/ar8uhyf9ir
@@ -58,7 +58,7 @@ float hannFade(float x, float f0, float f1, float L) {
 }
 
 vec2 projectLonLatToTextureSpace(vec2 lonLat) {
-    return (vec2((lonLat.x - lonRange.x)/(lonRange.y - lonRange.x), (lonLat.y - latRange.x)/(latRange.y - latRange.x)) * 2.0) - 1.0;
+    return (vec2(normalizeMinMax(lonLat.x, lonRange.x, lonRange.y), normalizeMinMax(lonLat.y, latRange.x, latRange.y)) * 2.0) - 1.0;
 }
 
 vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
@@ -108,7 +108,7 @@ mat3 createEnuToECEFRot(float sinLon, float cosLon, float sinLat, float cosLat) 
     return mat3(e, n, u);
 }
 
-vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float lengthOffset) {
+vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float lengthOffset, float normalizedSpeed) {
     float lonA = radians(pointALonLat.x);
     float latA = radians(pointALonLat.y);
     float lonB = radians(pointBLonLat.x);
@@ -136,8 +136,8 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     vec2 length = normalize(pointBEnu - pointAEnu).xy;
     vec2 width = vec2(-length.y, length.x);
 
-    float quadWidthMeters = 10000.0;
-    float quadLengthMeters = 5000.0;
+    float quadWidthMeters = mix(lineWidth.x, lineWidth.y, normalizedSpeed);
+    float quadLengthMeters = mix(lineLength.x, lineLength.y, normalizedSpeed);
 
     vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters) + (length * lengthOffset * quadLengthMeters), 0.0);
 
@@ -153,7 +153,7 @@ void main() {
     
     float isAnyRandomPointUsed = nextPosition.w + currentPosition.w;
 
-    vec2 newLatLon = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x);
+    vec2 newLatLon = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x, speed.w);
 
     bool isCrossingDateline = abs(nextPosition.x - currentPosition.x) > 180.0 || abs(newLatLon.x - currentPosition.x) > 180.0;
 

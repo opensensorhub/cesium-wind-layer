@@ -10,21 +10,21 @@ export interface WindLayerOptions {
    */
   particleHeight: number;
   /**
-   * Width range of particle trails in pixels. Default is { min: 1, max: 5 }.
+   * Width range of particle in meters. This does not include trails Default is { min: 5000, max: 10000 }.
    * Controls the width of the particles.
    * @property {number} min - Minimum width of particle trails
    * @property {number} max - Maximum width of particle trails
    */
-  lineWidth: {
+  particleWidth: {
     min: number;
     max: number;
   };
   /**
-   * Length range of particle trails. Default is { min: 20, max: 100 }.
+   * Length range of particle. This does not include trails. Default is { min: 5000, max: 5000 }.
    * @property {number} min - Minimum length of particle trails
    * @property {number} max - Maximum length of particle trails
    */
-  lineLength: {
+  particleLength: {
     min: number;
     max: number;
   };

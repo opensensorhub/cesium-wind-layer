@@ -3,14 +3,10 @@ precision highp float;
 
 in vec4 speed;
 in float timeAlpha;
-//in float v_segmentPosition;
-//in float timeAlpha;
 
 uniform vec2 domain;
 uniform vec2 displayRange;
 uniform sampler2D colorTable;
-uniform sampler2D segmentsDepthTexture;
-//uniform bool useHeatmap;
 
 out vec4 fragColor;
 

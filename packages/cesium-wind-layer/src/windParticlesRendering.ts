@@ -243,7 +243,6 @@ export class WindParticlesRendering {
       geometry: this.createSegmentsGeometry(),
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
-        previousParticlesPosition: () => this.computing.particlesTextures.previousParticlesPosition,
         currentParticlesPosition: () => this.computing.particlesTextures.currentParticlesPosition,
         postProcessingPosition: () => this.computing.particlesTextures.postProcessingPosition,
         particlesGenTime: () => this.computing.particlesTextures.particlesGenTime,
@@ -251,14 +250,10 @@ export class WindParticlesRendering {
         particleFadeInTime: () => this.options.particleFadeInTime,
         particleFadeOutTime: () => this.options.particleFadeOutTime,
         particlesSpeed: () => this.computing.particlesTextures.particlesSpeed,
-        frameRateAdjustment: () => this.computing.frameRateAdjustment,
         lonRange: () => new Cartesian2(this.computing.windData.bounds.west, this.computing.windData.bounds.east),
         latRange: () => new Cartesian2(this.computing.windData.bounds.south, this.computing.windData.bounds.north),
         colorTable: () => this.colorTable,
-        domain: () => {
-          const domain = new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max);
-          return domain;
-        },
+        domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
         displayRange: () => {
           const displayRange = new Cartesian2(
             this.options.displayRange?.min ?? this.computing.windData.speed.min,
@@ -266,19 +261,15 @@ export class WindParticlesRendering {
           );
           return displayRange;
         },
-        particleHeight: () => this.options.particleHeight || 0,
-        aspect: () => this.context.drawingBufferWidth / this.context.drawingBufferHeight,
-        pixelSize: () => this.viewerParameters.pixelSize,
         lineWidth: () => {
-          const width = this.options.lineWidth || DefaultOptions.lineWidth;
+          const width = this.options.particleWidth || DefaultOptions.particleWidth;
           return new Cartesian2(width.min, width.max);
         },
         lineLength: () => {
-          const length = this.options.lineLength || DefaultOptions.lineLength;
+          const length = this.options.particleLength || DefaultOptions.particleLength;
           return new Cartesian2(length.min, length.max);
         },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
-        segmentsDepthTexture: () => this.textures.segmentsDepth
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),

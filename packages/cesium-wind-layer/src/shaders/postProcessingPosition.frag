@@ -3,21 +3,19 @@ precision highp float;
 
 uniform sampler2D nextParticlesPosition;
 uniform sampler2D particlesGenTime;
-uniform sampler2D particlesSpeed; // (u, v, norm)
 
 // range (min, max)
 uniform vec2 lonRange;
 uniform vec2 latRange;
 
 uniform float currentTime;
-uniform float maxTimeDelta;
 uniform float randomCoefficient;
 
 in vec2 v_textureCoordinates;
 
 // pseudo-random generator
 const vec3 randomConstants = vec3(12.9898, 78.233, 4375.85453);
-const vec2 normalRange = vec2(0.0, 1.0);
+
 float rand(vec2 seed, vec2 range) {
     vec2 randomSeed = randomCoefficient * seed;
     float temp = dot(randomConstants.xy, randomSeed);
@@ -51,16 +49,12 @@ out vec4 fragColor;
 
 void main() {
     vec2 nextParticle = texture(nextParticlesPosition, v_textureCoordinates).rg;
-    vec4 nextSpeed = texture(particlesSpeed, v_textureCoordinates);
     vec2 particleGenTime = texture(particlesGenTime, v_textureCoordinates).rg;
 
     float deltaTime = currentTime - particleGenTime.x;
-    float speedNorm = nextSpeed.a;
 
     vec2 seed1 = nextParticle.xy + v_textureCoordinates;
-    vec2 seed2 = nextSpeed.rg + v_textureCoordinates;
     
-    float randomNumber = rand(seed2, normalRange);
     float timeDiff = deltaTime - particleGenTime.y;
     float isNotExpired = float(timeDiff < 0.0);
     float isExpired = float(timeDiff >= 0.0);

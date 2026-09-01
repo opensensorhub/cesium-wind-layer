@@ -21,8 +21,8 @@ export const DefaultOptions: WindLayerOptions = {
   particlesTextureSize: 100,
   particleHeight: 1000,
   speedFactor: 1.0,
-  lineWidth: { min: 1, max: 2 },
-  lineLength: { min: 20, max: 100 },
+  particleWidth: { min: 5000, max: 10000 },
+  particleLength: { min: 5000, max: 5000 },
   colors: ['white'],
   flipY: false,
   domain: undefined,
@@ -112,8 +112,8 @@ export class WindLayer {
    * @param {Partial<WindLayerOptions>} [options] - Optional configuration options for the wind layer.
    * @param {number} [options.particlesTextureSize=100] - Size of the particle texture. Determines the maximum number of particles (size squared).
    * @param {number} [options.particleHeight=0] - Height of particles above the ground in meters.
-   * @param {Object} [options.lineWidth={ min: 1, max: 2 }] - Width range of particle trails.
-   * @param {Object} [options.lineLength={ min: 20, max: 100 }] - Length range of particle trails.
+   * @param {Object} [options.particleWidth={ min: 5000, max: 1000 }] - Width range of particles.
+   * @param {Object} [options.particleLength={ min: 5000, max: 5000 }] - Length range of particles.
    * @param {number} [options.speedFactor=1.0] - Factor to adjust the speed of particles.
    * @param {string[]} [options.colors=['white']] - Array of colors for particles. Can be used to create color gradients.
    * @param {boolean} [options.flipY=false] - Whether to flip the Y-axis of the wind data.
