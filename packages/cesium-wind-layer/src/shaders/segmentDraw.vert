@@ -31,6 +31,8 @@ uniform float particleFadeOutTime;
 uniform vec2 lineWidth;
 uniform vec2 domain;
 uniform bool is3D;
+uniform vec2 latDisplayRange;
+uniform vec2 lonDisplayRange;
 uniform vec2 latRange;
 uniform vec2 lonRange;
 
@@ -152,6 +154,14 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     return ecefToLonLat(pointA + (enuToEcefRot * offsetEnu));
 }
 
+bool particleOutbound(vec2 lonLat) {
+
+    float lon = lonLat.x;
+    float lat = lonLat.y;
+
+    return (lon < lonDisplayRange.x || lon > lonDisplayRange.y) || (lat < latDisplayRange.x || lat > latDisplayRange.y);
+}
+
 void main() {
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
     speed = texture(particlesSpeed, particleIndex);
@@ -161,13 +171,13 @@ void main() {
     
     float isAnyRandomPointUsed = nextPosition.w + currentPosition.w;
 
-    vec2 newLatLon = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x, speed.w);
+    vec2 newLonLat = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x, speed.w);
 
-    bool isCrossingDateline = abs(nextPosition.x - currentPosition.x) > 180.0 || abs(newLatLon.x - currentPosition.x) > 180.0;
+    bool isCrossingDateline = abs(nextPosition.x - currentPosition.x) > 180.0 || abs(newLonLat.x - currentPosition.x) > 180.0;
 
-    float isDiscard = float(isCrossingDateline || isAnyRandomPointUsed > 0.0);
+    float isDiscard = float(isCrossingDateline || isAnyRandomPointUsed > 0.0 || particleOutbound(newLonLat));
 
-    gl_Position = vec4(projectLonLatToTextureSpace(newLatLon), 0.0, 1.0) * (1.0/(1.0 - isDiscard)); //returns NaN and discards triangle if marked to be discarded
+    gl_Position = vec4(projectLonLatToTextureSpace(newLonLat), 0.0, 1.0) * (1.0/(1.0 - isDiscard)); //returns NaN and discards triangle if marked to be discarded
 
     vec2 particleGenTime = texture(particlesGenTime, particleIndex).rg;
 

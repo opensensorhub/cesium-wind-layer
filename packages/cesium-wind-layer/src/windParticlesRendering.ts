@@ -1,10 +1,11 @@
-import { Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction } from 'cesium';
+import { Math as CesiumMath, Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
 import { ShaderManager } from './shaderManager';
 import { deepMerge } from './utils';
 import { DefaultOptions } from '.';
+
 
 export class WindParticlesRendering {
   private context: any;
@@ -266,6 +267,8 @@ export class WindParticlesRendering {
           return new Cartesian2(width.min, width.max);
         },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
+        latDisplayRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.south), CesiumMath.toDegrees(this.options.displayBounds.north)),
+        lonDisplayRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.west), CesiumMath.toDegrees(this.options.displayBounds.east))
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),

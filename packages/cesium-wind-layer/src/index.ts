@@ -31,7 +31,8 @@ export const DefaultOptions: WindLayerOptions = {
   particleLifeTime: 2000,
   heatmapOpacity: 1,
   particlesOpacity: 1,
-  trailFade: 0.97
+  trailFade: 0.97,
+  displayBounds: Rectangle.MAX_VALUE
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 

@@ -1,4 +1,4 @@
-import { Cartesian3 } from 'cesium';
+import { Cartesian3, Rectangle } from 'cesium';
 
 export interface WindLayerOptions {
   /**
@@ -86,6 +86,11 @@ export interface WindLayerOptions {
    * 0 is equivalent to no trails, 1 is equivalent to never fading trails
    */
   trailFade: number;
+
+  /**
+   * Lat lon bounds for displaying data.
+   */
+  displayBounds: Rectangle;
 }
 
 export interface WindDataDemention {
