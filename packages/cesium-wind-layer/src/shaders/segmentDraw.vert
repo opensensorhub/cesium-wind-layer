@@ -75,24 +75,31 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
 //https://hal.science/hal-01704943v2/document
 vec2 ecefToLonLat(vec3 ecef) {
 
-    float w = length(ecef.xy);
+    float one_third = 1.0/3.0;
+    float a2 = a*a;
+    float w2 = dot(ecef.xy, ecef.xy);
     float l = e2/2.0;
-    float m = (w*w)/(a*a);
+    float l2 = l*l;
+    float m = w2/a2;
     float n = pow(((1.0-e2)* ecef.z)/b, 2.0);
-    float i = -((2.0*l*l) + m + n)/2.0;
-    float k = (l * l)*((l * l) - m - n);
-    float mnl2 = m * n * l * l;
-    float q = (pow(m + n - (4.0*l*l), 3.0)/216.0) + mnl2;
-    float D = sqrt(((2.0 * q) - mnl2)*mnl2);
-    float B = (i/3.0) - (sign(q + D) * pow(abs(q + D), 1.0/3.0)) - (sign(q - D)*pow(abs(q - D), 1.0/3.0));
-    float t = sqrt(sqrt((B*B) - k) - ((B+i)/2.0)) - (sign(m-n) * sqrt((B-i)/2.0));
-    float w1 = w/(t+l);
-    float z1 = ((1.0-e2)*ecef.z)/(t-l);
-    float latRad = atan(z1, (1.0-e2)*w1);
-    // if(w == 0.0) {
-    //     latRad = sign(ecef.z) * (czm_pi/2.0);
-    // }
-    
+    float p = (m + n - (4.0 * l2))/6.0;
+    float G = m * n * l2;
+    float H = (2.0 * p * p * p) + G;
+    float C = pow(H + G + (2.0 * sqrt(H*G)), one_third)/pow(2.0, one_third);
+    float i = -((2.0*l2) + m + n)/2.0;
+    float P = p * p;
+    float B = (i/3.0) - C - (P/C);
+    float k = l2*(l2 - m - n);
+    float t = sqrt(sqrt((B*B) - k) - ((B+i)/2.0)) - (sign(m-n) * sqrt(abs((B-i)/2.0)));
+    float F = (t*t*t*t) + (2.0*i*t*t) + (2.0 * l * (m-n) * t) + k;
+    float Dfdt = (4.0*t*t*t) + (4.0*i*t) + (2.0*l*(m-n));
+    float delta_t = -F/Dfdt;
+    float u = t + delta_t + l;
+    float v = t + delta_t - l;
+    float w = sqrt(w2);
+
+
+    float latRad = atan(ecef.z*u, w*v);
     float lonRad = atan(ecef.y, ecef.x);
 
     return vec2(degrees(lonRad), degrees(latRad));
