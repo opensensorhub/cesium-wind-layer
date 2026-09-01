@@ -19,7 +19,6 @@ type WindLayerEventCallback = (data: WindData | WindLayerOptions) => void;
 
 export const DefaultOptions: WindLayerOptions = {
   particlesTextureSize: 100,
-  particleHeight: 1000,
   speedFactor: 1.0,
   particleWidth: { min: 5000, max: 10000 },
   colors: ['white'],
@@ -111,7 +110,6 @@ export class WindLayer {
    * @param {WindData} windData - The wind field data to visualize.
    * @param {Partial<WindLayerOptions>} [options] - Optional configuration options for the wind layer.
    * @param {number} [options.particlesTextureSize=100] - Size of the particle texture. Determines the maximum number of particles (size squared).
-   * @param {number} [options.particleHeight=0] - Height of particles above the ground in meters.
    * @param {Object} [options.particleWidth={ min: 5000, max: 1000 }] - Width range of particles.
    * @param {number} [options.speedFactor=1.0] - Factor to adjust the speed of particles.
    * @param {string[]} [options.colors=['white']] - Array of colors for particles. Can be used to create color gradients.
