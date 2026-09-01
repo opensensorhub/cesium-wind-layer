@@ -301,7 +301,8 @@ export class WindParticlesRendering {
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
         trailsColor: () => this.framebuffers.currentTrails.getColorTexture(0),
-        segmentsColor: () => this.framebuffers.segments.getColorTexture(0)
+        segmentsColor: () => this.framebuffers.segments.getColorTexture(0),
+        trailFade: () => this.options.trailFade
       },
       vertexShaderSource: ShaderManager.getTrailsDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getTrailsDrawFragmentShader(),

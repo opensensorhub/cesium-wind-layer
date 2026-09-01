@@ -93,6 +93,12 @@ export interface WindLayerOptions {
    * 0-1 alpha value for particles
    */
   particlesOpacity: number;
+
+  /**
+   * How much trails fade every frame. Clamped to [0,1].
+   * 0 is equivalent to no trails, 1 is equivalent to never fading trails
+   */
+  trailFade: number;
 }
 
 export interface WindDataDemention {
