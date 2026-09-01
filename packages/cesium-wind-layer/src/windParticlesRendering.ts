@@ -265,10 +265,6 @@ export class WindParticlesRendering {
           const width = this.options.particleWidth || DefaultOptions.particleWidth;
           return new Cartesian2(width.min, width.max);
         },
-        lineLength: () => {
-          const length = this.options.particleLength || DefaultOptions.particleLength;
-          return new Cartesian2(length.min, length.max);
-        },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),

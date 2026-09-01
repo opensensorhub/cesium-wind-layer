@@ -29,7 +29,6 @@ uniform float currentTime;
 uniform float particleFadeInTime;
 uniform float particleFadeOutTime;
 uniform vec2 lineWidth;
-uniform vec2 lineLength;
 uniform vec2 domain;
 uniform bool is3D;
 uniform vec2 latRange;
@@ -132,12 +131,14 @@ vec2 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     vec3 pointAEnu = ecefToEnuRot * pointA;
     vec3 pointBEnu = ecefToEnuRot * pointB;
 
+    float dist = distance(pointA, pointB);
+
     //get head and side vector of quad
     vec2 length = normalize(pointBEnu - pointAEnu).xy;
     vec2 width = vec2(-length.y, length.x);
 
     float quadWidthMeters = mix(lineWidth.x, lineWidth.y, normalizedSpeed);
-    float quadLengthMeters = mix(lineLength.x, lineLength.y, normalizedSpeed);
+    float quadLengthMeters = dist/2.0;
 
     vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters) + (length * lengthOffset * quadLengthMeters), 0.0);
 

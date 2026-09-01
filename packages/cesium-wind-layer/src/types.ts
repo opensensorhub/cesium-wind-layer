@@ -20,15 +20,6 @@ export interface WindLayerOptions {
     max: number;
   };
   /**
-   * Length range of particle. This does not include trails. Default is { min: 5000, max: 5000 }.
-   * @property {number} min - Minimum length of particle trails
-   * @property {number} max - Maximum length of particle trails
-   */
-  particleLength: {
-    min: number;
-    max: number;
-  };
-  /**
    * Factor to adjust the speed of particles. Default is 1.0.
    * Controls the movement speed of particles.
    */
