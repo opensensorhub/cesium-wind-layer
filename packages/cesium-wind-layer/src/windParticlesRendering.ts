@@ -244,13 +244,12 @@ export class WindParticlesRendering {
       geometry: this.createSegmentsGeometry(),
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
-        currentParticlesPosition: () => this.computing.particlesTextures.currentParticlesPosition,
-        postProcessingPosition: () => this.computing.particlesTextures.postProcessingPosition,
-        particlesGenTime: () => this.computing.particlesTextures.particlesGenTime,
+        currentParticlesPosition: () => this.computing.particlesTextures.particlePositions[this.computing.currentPosition],
+        postProcessingPosition: () => this.computing.particlesTextures.particlePositions[(this.computing.currentPosition + 1) % this.computing.numPositions],
+        particlesGenTime: () => this.computing.particlesTextures.particleTimes[this.computing.currentPosition],
         currentTime: () => performance.now(),
         particleFadeInTime: () => this.options.particleFadeInTime,
         particleFadeOutTime: () => this.options.particleFadeOutTime,
-        particlesSpeed: () => this.computing.particlesTextures.particlesSpeed,
         lonRange: () => new Cartesian2(this.computing.windData.bounds.west, this.computing.windData.bounds.east),
         latRange: () => new Cartesian2(this.computing.windData.bounds.south, this.computing.windData.bounds.north),
         colorTable: () => this.colorTable,
@@ -268,90 +267,20 @@ export class WindParticlesRendering {
         },
         is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
         latDisplayRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.south), CesiumMath.toDegrees(this.options.displayBounds.north)),
-        lonDisplayRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.west), CesiumMath.toDegrees(this.options.displayBounds.east))
+        lonDisplayRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.west), CesiumMath.toDegrees(this.options.displayBounds.east)),
+        segmentsDepthTexture: () => this.textures.segmentsDepth,
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
       rawRenderState: this.createRawRenderState({
-        viewport: {
-          height: this.texSize,
-          width: this.texSize
-        },
-        depthTest: {
-          enabled: false,
-          func: DepthFunction.GREATER
-        },
-        depthMask: false,
-        blending: {
-          enabled: false,
-        }
-      }),
-      framebuffer: this.framebuffers.segments,
-      autoClear: true
-    });
-
-    const trails = new CustomPrimitive({
-      commandType: 'Draw',
-      attributeLocations: {
-        position: 0,
-        st: 1
-      },
-      geometry: this.getFullscreenQuad(),
-      primitiveType: PrimitiveType.TRIANGLES,
-      uniformMap: {
-        trailsColor: () => this.framebuffers.currentTrails.getColorTexture(0),
-        segmentsColor: () => this.framebuffers.segments.getColorTexture(0),
-        trailFade: () => this.options.trailFade
-      },
-      vertexShaderSource: ShaderManager.getTrailsDrawVertexShader(),
-      fragmentShaderSource: ShaderManager.getTrailsDrawFragmentShader(),
-      rawRenderState: this.createRawRenderState({
-        viewport: {
-          height: this.texSize,
-          width: this.texSize
-        },
-        depthTest: {
-          enabled: false,
-          func: DepthFunction.ALWAYS
-        },
-        depthMask: false,
-        blending: {
-          enabled: false,
-        }
-      }),
-      preExecute: () => {
-        //swap framebuffers
-        const tmp = this.framebuffers.currentTrails;
-        this.framebuffers.currentTrails = this.framebuffers.nextTrails
-        this.framebuffers.nextTrails = tmp
-        if(this.primitives.trails.commandToExecute) {
-          this.primitives.trails.commandToExecute.framebuffer = this.framebuffers.nextTrails;
-        }
-        
-      },
-      framebuffer: this.framebuffers.nextTrails,
-    });
-
-    const screen = new CustomPrimitive({
-      commandType: 'Draw',
-      attributeLocations: {
-        position: 0,
-        st: 1
-      },
-      geometry: this.createHeatmapGeometry(),
-      primitiveType: PrimitiveType.TRIANGLES,
-      uniformMap: {
-        tex: () => this.framebuffers.nextTrails.getColorTexture(0),
-        opacity: () => this.options.particlesOpacity
-      },
-      vertexShaderSource: ShaderManager.getScreenDrawVertexShader(),
-      fragmentShaderSource: ShaderManager.getScreenDrawFragmentShader(),
-      rawRenderState: this.createRawRenderState({
-        viewport: undefined,
+        // viewport: {
+        //   height: this.texSize,
+        //   width: this.texSize
+        // },
         depthTest: {
           enabled: true
         },
-        depthMask: false,
+        depthMask: true,
         blending: {
           enabled: true,
           blendEquation: WebGLRenderingContext.FUNC_ADD,
@@ -359,7 +288,80 @@ export class WindParticlesRendering {
           blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
         }
       }),
+      //framebuffer: this.framebuffers.segments,
+      //autoClear: true
     });
+
+    // const trails = new CustomPrimitive({
+    //   commandType: 'Draw',
+    //   attributeLocations: {
+    //     position: 0,
+    //     st: 1
+    //   },
+    //   geometry: this.getFullscreenQuad(),
+    //   primitiveType: PrimitiveType.TRIANGLES,
+    //   uniformMap: {
+    //     trailsColor: () => this.framebuffers.currentTrails.getColorTexture(0),
+    //     segmentsColor: () => this.framebuffers.segments.getColorTexture(0),
+    //     trailFade: () => this.options.trailFade
+    //   },
+    //   vertexShaderSource: ShaderManager.getTrailsDrawVertexShader(),
+    //   fragmentShaderSource: ShaderManager.getTrailsDrawFragmentShader(),
+    //   rawRenderState: this.createRawRenderState({
+    //     viewport: {
+    //       height: this.texSize,
+    //       width: this.texSize
+    //     },
+    //     depthTest: {
+    //       enabled: false,
+    //       func: DepthFunction.ALWAYS
+    //     },
+    //     depthMask: false,
+    //     blending: {
+    //       enabled: false,
+    //     }
+    //   }),
+    //   preExecute: () => {
+    //     //swap framebuffers
+    //     const tmp = this.framebuffers.currentTrails;
+    //     this.framebuffers.currentTrails = this.framebuffers.nextTrails
+    //     this.framebuffers.nextTrails = tmp
+    //     if(this.primitives.trails.commandToExecute) {
+    //       this.primitives.trails.commandToExecute.framebuffer = this.framebuffers.nextTrails;
+    //     }
+        
+    //   },
+    //   framebuffer: this.framebuffers.nextTrails,
+    // });
+
+    // const screen = new CustomPrimitive({
+    //   commandType: 'Draw',
+    //   attributeLocations: {
+    //     position: 0,
+    //     st: 1
+    //   },
+    //   geometry: this.createHeatmapGeometry(),
+    //   primitiveType: PrimitiveType.TRIANGLES,
+    //   uniformMap: {
+    //     tex: () => this.framebuffers.nextTrails.getColorTexture(0),
+    //     opacity: () => this.options.particlesOpacity
+    //   },
+    //   vertexShaderSource: ShaderManager.getScreenDrawVertexShader(),
+    //   fragmentShaderSource: ShaderManager.getScreenDrawFragmentShader(),
+    //   rawRenderState: this.createRawRenderState({
+    //     viewport: undefined,
+    //     depthTest: {
+    //       enabled: true
+    //     },
+    //     depthMask: false,
+    //     blending: {
+    //       enabled: true,
+    //       blendEquation: WebGLRenderingContext.FUNC_ADD,
+    //       blendFuncSource: WebGLRenderingContext.SRC_ALPHA,
+    //       blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
+    //     }
+    //   }),
+    // });
 
     const heatmap = new CustomPrimitive({
       name: 'heatmap',
@@ -394,7 +396,7 @@ export class WindParticlesRendering {
       })
     })
 
-    return { segments, heatmap, screen, trails };
+    return { segments, heatmap }//, screen, trails };
   }
 
   onParticlesTextureSizeChange() {

@@ -22,14 +22,13 @@ export class WindParticleSystem {
 
   getPrimitives(): CustomPrimitive[] {
     const primitives = [
-      this.computing.primitives.calculateSpeed,
       this.computing.primitives.updatePosition,
-      this.computing.primitives.postProcessingPosition,
+      //this.computing.primitives.postProcessingPosition,
       this.computing.primitives.calculateGenTime,
       this.rendering.primitives.heatmap,
       this.rendering.primitives.segments,
-      this.rendering.primitives.trails,
-      this.rendering.primitives.screen
+      // this.rendering.primitives.trails,
+      // this.rendering.primitives.screen
     ];
 
     return primitives;
