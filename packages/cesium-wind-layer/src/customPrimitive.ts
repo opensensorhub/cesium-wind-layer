@@ -136,7 +136,8 @@ export default class CustomPrimitive {
   }
 
   update(frameState: any) {
-    if (!this.isDynamic()) {
+
+    if (!this.isDynamic() || frameState.passes.pick) {
       return;
     }
 

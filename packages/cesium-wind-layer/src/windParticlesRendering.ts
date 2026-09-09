@@ -1,4 +1,4 @@
-import { Math as CesiumMath, Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction } from 'cesium';
+import { Math as CesiumMath, Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction, IndexDatatype } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
@@ -86,26 +86,28 @@ createSegmentsGeometry(): Geometry {
       const u = s / texureSize;
       const v = t / texureSize;
       for (let j = 0; j < this.computing.numPositions; j++) {
-        st.push(u, v);
-        st.push(u, v); 
-        st.push(u, v); 
-        st.push(u, v);
-
-        // (normal offset, ring buffer index, particle id)
-        normal.push(-1, j, particleCount);
-        normal.push(1, j, particleCount);
-        normal.push(-1, j + 1, particleCount);
-        normal.push(1, j + 1, particleCount);
-
-        vertexIndexes.push(
-          vertexCount + 0, vertexCount + 1, vertexCount + 2,
-          vertexCount + 1, vertexCount + 3, vertexCount + 2
+        st.push(
+          u, v,
+          u, v
         );
 
-        vertexCount += 4;
+        // (normal offset, ring buffer index, particle id)
+        normal.push(
+          -1, j, particleCount,
+          1, j, particleCount
+        );
+
+        vertexIndexes.push(
+          vertexCount + 0, vertexCount + 1
+        );
+
+        vertexCount += 2;
       }
+      //degenerate vertex
+      //this avoids connecting 2 different segments together
+      vertexIndexes.push(0xFFFFFFFF);
+      particleCount++;
     }
-    particleCount++;
   }
 
   return new Geometry({
@@ -121,7 +123,8 @@ createSegmentsGeometry(): Geometry {
         values: new Float32Array(normal)
       }),
     }),
-    indices: new Uint32Array(vertexIndexes)
+    indices: new Uint32Array(vertexIndexes),
+    primitiveType: PrimitiveType.TRIANGLE_STRIP,
   });
 }
 
@@ -156,7 +159,7 @@ createSegmentsGeometry(): Geometry {
         normal: 1
       },
       geometry: this.createSegmentsGeometry(),
-      primitiveType: PrimitiveType.TRIANGLES,
+      primitiveType: PrimitiveType.TRIANGLE_STRIP,
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
         currentLayer: () => this.computing.currentPosition - 1,
@@ -188,10 +191,6 @@ createSegmentsGeometry(): Geometry {
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
       rawRenderState: this.createRawRenderState({
-        // viewport: {
-        //   height: this.texSize,
-        //   width: this.texSize
-        // },
         depthTest: {
           enabled: true
         },
@@ -203,80 +202,8 @@ createSegmentsGeometry(): Geometry {
           blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
         }
       }),
-      //framebuffer: this.framebuffers.segments,
-      //autoClear: true
     });
 
-    // const trails = new CustomPrimitive({
-    //   commandType: 'Draw',
-    //   attributeLocations: {
-    //     position: 0,
-    //     st: 1
-    //   },
-    //   geometry: this.getFullscreenQuad(),
-    //   primitiveType: PrimitiveType.TRIANGLES,
-    //   uniformMap: {
-    //     trailsColor: () => this.framebuffers.currentTrails.getColorTexture(0),
-    //     segmentsColor: () => this.framebuffers.segments.getColorTexture(0),
-    //     trailFade: () => this.options.trailFade
-    //   },
-    //   vertexShaderSource: ShaderManager.getTrailsDrawVertexShader(),
-    //   fragmentShaderSource: ShaderManager.getTrailsDrawFragmentShader(),
-    //   rawRenderState: this.createRawRenderState({
-    //     viewport: {
-    //       height: this.texSize,
-    //       width: this.texSize
-    //     },
-    //     depthTest: {
-    //       enabled: false,
-    //       func: DepthFunction.ALWAYS
-    //     },
-    //     depthMask: false,
-    //     blending: {
-    //       enabled: false,
-    //     }
-    //   }),
-    //   preExecute: () => {
-    //     //swap framebuffers
-    //     const tmp = this.framebuffers.currentTrails;
-    //     this.framebuffers.currentTrails = this.framebuffers.nextTrails
-    //     this.framebuffers.nextTrails = tmp
-    //     if(this.primitives.trails.commandToExecute) {
-    //       this.primitives.trails.commandToExecute.framebuffer = this.framebuffers.nextTrails;
-    //     }
-        
-    //   },
-    //   framebuffer: this.framebuffers.nextTrails,
-    // });
-
-    // const screen = new CustomPrimitive({
-    //   commandType: 'Draw',
-    //   attributeLocations: {
-    //     position: 0,
-    //     st: 1
-    //   },
-    //   geometry: this.createHeatmapGeometry(),
-    //   primitiveType: PrimitiveType.TRIANGLES,
-    //   uniformMap: {
-    //     tex: () => this.framebuffers.nextTrails.getColorTexture(0),
-    //     opacity: () => this.options.particlesOpacity
-    //   },
-    //   vertexShaderSource: ShaderManager.getScreenDrawVertexShader(),
-    //   fragmentShaderSource: ShaderManager.getScreenDrawFragmentShader(),
-    //   rawRenderState: this.createRawRenderState({
-    //     viewport: undefined,
-    //     depthTest: {
-    //       enabled: true
-    //     },
-    //     depthMask: false,
-    //     blending: {
-    //       enabled: true,
-    //       blendEquation: WebGLRenderingContext.FUNC_ADD,
-    //       blendFuncSource: WebGLRenderingContext.SRC_ALPHA,
-    //       blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
-    //     }
-    //   }),
-    // });
 
     const heatmap = new CustomPrimitive({
       name: 'heatmap',

@@ -156,27 +156,30 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
 // }
 
 void main() {
-
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
-
-    float currentZ = (normal.y + 0.5) / numLayers;
-    float nextZ = (mod(normal.y + 1.0, numLayers) + 0.5) / numLayers;
-
-    float distanceToHead = mod(normal.y - currentLayer + numLayers, numLayers);
+    float segmentStep = normal.y;
+    float currentLayerIndex = mod(currentLayer + 1.0 + segmentStep, numLayers);
+    float nextLayerIndex = mod(currentLayer + 1.0 + segmentStep + 1.0, numLayers);
+    float currentZ = (currentLayerIndex + 0.5) / numLayers;
+    float nextZ = (nextLayerIndex + 0.5) / numLayers;
 
     vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
-    vec4 nextPosition = texture(particlesPosition,  vec3(particleIndex, nextZ)).rgba;
+    vec4 nextPosition = texture(particlesPosition, vec3(particleIndex, nextZ)).rgba;
 
     float isAnyRandomPointUsed = nextPosition.w;
-    bool isInvalid = (isAnyRandomPointUsed > 0.0) || (normal.y == currentLayer);
+    bool isInvalid = (isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0);
 
-    vec3 newPos = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.x, currentPosition.z);
+    vec3 newPos = calculateOffsetOnNormalDirection(
+        currentPosition.xy, 
+        nextPosition.xy, 
+        normal.x, 
+        currentPosition.z
+    );
 
-    if(isInvalid) {
-        gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
-    } else {
-        gl_Position = czm_modelViewProjection * vec4(newPos, 1.0); //returns NaN and discards triangle if marked to be discarded
-    }
-    alpha = distanceToHead/numLayers;
+
+    gl_Position = (float(!isInvalid) * czm_modelViewProjection * vec4(newPos, 1.0)) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
+
+    // Alpha fades nicely from tail (0.0) to head (1.0)
+    alpha = segmentStep / numLayers;
     textureCoordinate = st;
 }
