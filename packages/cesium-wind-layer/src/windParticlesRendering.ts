@@ -244,9 +244,10 @@ export class WindParticlesRendering {
       geometry: this.createSegmentsGeometry(),
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
-        currentParticlesPosition: () => this.computing.particlesTextures.particlePositions[this.computing.currentPosition],
-        postProcessingPosition: () => this.computing.particlesTextures.particlePositions[(this.computing.currentPosition + 1) % this.computing.numPositions],
-        particlesGenTime: () => this.computing.particlesTextures.particleTimes[this.computing.currentPosition],
+        particlesPosition: () => this.computing.particlesTextures.historicalPositions,
+        particlesGenTime: () => this.computing.particlesTextures.currentParticleTimes,
+        currentLayer: () => this.computing.currentPosition,
+        numLayers: () => this.computing.numPositions,
         currentTime: () => performance.now(),
         particleFadeInTime: () => this.options.particleFadeInTime,
         particleFadeOutTime: () => this.options.particleFadeOutTime,

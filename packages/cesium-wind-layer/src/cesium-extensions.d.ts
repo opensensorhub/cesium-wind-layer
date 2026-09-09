@@ -30,10 +30,10 @@ declare module 'cesium' {
     constructor(options: {
       context: any;
       colorTextures: Texture[];
-      depthTexture: Texture;
+      depthTexture?: Texture;
+      destroyAttachments?: boolean;
     });
     getColorTexture(index: number): Texture;
-    depthTexture: Texture;
   }
 
   export enum BufferUsage {
@@ -58,6 +58,7 @@ declare module 'cesium' {
     vertexArray?: VertexArray;
     framebuffer?: Framebuffer;
     outputTexture?: Texture;
+    execute(context: any, passState: PassState): void;
   }
 
   export class ComputeCommand {
@@ -121,6 +122,30 @@ declare module 'cesium' {
       sampler?: Sampler;
     });
     copyFrom(options: { source: ArrayBufferView | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement }): void;
+    destroy(): void;
+  }
+  export class Texture3D {
+    constructor(options: {
+      context: any;
+      pixelFormat?: PixelFormat;
+      pixelDatatype?: PixelDatatype;
+      flipY?: boolean;
+      skipColorSpaceConversion?: boolean;
+      sampler?: Sampler
+      width?: number;
+      height?: number;
+      depth?: number;
+      preMultiplyAlpha?: boolean;
+      id?: string;
+      source?: {
+        width?: number;
+        height?: number;
+        depth?: number;
+        arrayBufferView: Uint8Array | Float32Array;
+        mipLevels?: Uint8Array | Float32Array;
+      };
+    });
+    _texture: WebGLTexture
     destroy(): void;
   }
 

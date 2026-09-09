@@ -10,6 +10,8 @@ import renderHeatmapFragmentShader from './shaders/HeatmapDraw.frag';
 // import renderTrailsVertexShader from './shaders/trailsDraw.vert';
 // import screenDrawFragmentShader from './shaders/screenDraw.frag';
 import screenDrawVertexShader from './shaders/screenDraw.vert';
+import ViewportQuad from './shaders/ViewportQuad.vert'
+import copyPositions from './shaders/copyPositions.frag'
 
 export class ShaderManager {
   // static getCalculateSpeedShader(): ShaderSource {
@@ -57,6 +59,18 @@ export class ShaderManager {
   static getHeatmapFragmentShader(): ShaderSource {
     return new ShaderSource({
       sources: [renderHeatmapFragmentShader]
+    });
+  }
+
+  static getViewportQuadVS(): ShaderSource {
+    return new ShaderSource({
+      sources: [ViewportQuad]
+    });
+  }
+
+  static getCopyPositions(): ShaderSource {
+    return new ShaderSource({
+      sources: [copyPositions]
     });
   }
 

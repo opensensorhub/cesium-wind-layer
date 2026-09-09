@@ -1,12 +1,15 @@
 #version 300 es
 
 precision highp float;
+precision highp sampler3D;
 
 uniform float currentTime;
 uniform sampler2D currentParticlesPosition;
 uniform sampler2D prevParticlesGenTime;
 uniform float particleLifeTime;
 uniform float randomCoefficient;
+uniform float currentLayer;
+uniform float numLayers;
 
 in vec2 v_textureCoordinates;
 

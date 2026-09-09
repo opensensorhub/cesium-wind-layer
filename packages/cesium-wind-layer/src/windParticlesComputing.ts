@@ -1,9 +1,9 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
 import { deepMerge } from './utils';
-
+import FramebufferSlice from './FramebufferSlice';
 export class WindParticlesComputing {
   context: any;
   options: WindLayerOptions;
@@ -13,12 +13,16 @@ export class WindParticlesComputing {
     V: Texture;
   };
   particlesTextures!: {
-    particlePositions: Texture[]
-    particleTimes: Texture[];
+    prevParticleTimes: Texture;
+    currentParticleTimes: Texture;
+    prevParticlePositions: Texture;
+    currentParticlePositions: Texture;
+    historicalPositions: Texture3D;
   };
   primitives!: {
     updatePosition: CustomPrimitive;
     calculateGenTime: CustomPrimitive;
+    copyTo3D: CustomPrimitive;
   };
   windData: Required<WindData>;
   private frameRateMonitor: FrameRateMonitor;
@@ -106,6 +110,38 @@ export class WindParticlesComputing {
     };
   }
 
+  private getFullscreenQuad() {
+    const atts = new GeometryAttributes();
+    atts.position = new GeometryAttribute({
+      componentDatatype: ComponentDatatype.FLOAT,
+      componentsPerAttribute: 3,
+      //  v3----v2
+      //  |     |
+      //  |     |
+      //  v0----v1
+      values: new Float32Array([
+        -1, -1, 0, // v0
+        1, -1, 0, // v1
+        1, 1, 0, // v2
+        -1, 1, 0, // v3
+      ])
+    });
+    atts.st = new GeometryAttribute({
+      componentDatatype: ComponentDatatype.FLOAT,
+      componentsPerAttribute: 2,
+      values: new Float32Array([
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 1,
+      ])
+    });
+    return new Geometry({
+      attributes: atts,
+      indices: new Uint32Array([3, 2, 0, 0, 2, 1])
+    });
+  }
+
   createParticlesTextures() {
     const options = {
       context: this.context,
@@ -122,20 +158,35 @@ export class WindParticlesComputing {
         magnificationFilter: TextureMagnificationFilter.NEAREST
       })
     }
-    const posTextures = []
-    const timeTextures = []
-    for(let i=0; i<this.numPositions; i++) {
-      posTextures.push(new Texture(options))
-      timeTextures.push(new Texture(options))
+
+    const options3d = {
+      context: this.context,
+      width: this.options.particlesTextureSize,
+      height: this.options.particlesTextureSize,
+      depth: this.numPositions,
+      pixelFormat: PixelFormat.RGBA,
+      pixelDatatype: PixelDatatype.FLOAT,
+      flipY: false,
+      source: {
+        arrayBufferView: new Float32Array(this.options.particlesTextureSize * this.options.particlesTextureSize * 4 * this.numPositions).fill(0)
+      },
+      sampler: new Sampler({
+        minificationFilter: TextureMinificationFilter.NEAREST,
+        magnificationFilter: TextureMagnificationFilter.NEAREST
+      }),
     }
+
     this.particlesTextures = {
-      particlePositions: posTextures,
-      particleTimes: timeTextures,
-    };
+      prevParticleTimes: new Texture(options),
+      currentParticleTimes: new Texture(options),
+      prevParticlePositions: new Texture(options3d),
+      currentParticlePositions: new Texture(options3d),
+      historicalPositions: new Texture3D(options3d),
+    }
   }
 
   destroyParticlesTextures() {
-    Object.values(this.particlesTextures).flatMap(texture => texture).forEach(texture => texture.destroy());
+    Object.values(this.particlesTextures).forEach(texture => texture.destroy());
   }
 
   createComputingPrimitives() {
@@ -154,41 +205,89 @@ export class WindParticlesComputing {
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),
           minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
           maximum: () => new Cartesian2(this.windData.bounds.east, this.windData.bounds.north),
-          currentParticlesPosition: () => this.particlesTextures.particlePositions[this.currentPosition],
-          particlesGenTime: () => this.particlesTextures.particleTimes[this.currentPosition],
+          prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
+          particlesGenTime: () => this.particlesTextures.currentParticleTimes,
           currentTime: () => performance.now(),
           lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
           randomCoefficient: function () {
             return Math.random();
-          }
+          },
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
-        outputTexture: this.particlesTextures.particlePositions[(this.currentPosition + 1) % this.numPositions],
         isDynamic: () => this.options.dynamic,
+        outputTexture: this.particlesTextures.currentParticlePositions,
         preExecute: () => {
-          this.currentPosition = (this.currentPosition + 1) % this.numPositions
-          if (this.primitives.updatePosition.commandToExecute) {
-            this.primitives.updatePosition.commandToExecute.outputTexture = this.particlesTextures.particlePositions[(this.currentPosition + 1) % this.numPositions];
+
+          //swap textures
+          const tmp = this.particlesTextures.prevParticlePositions
+          this.particlesTextures.prevParticlePositions = this.particlesTextures.currentParticlePositions
+          this.particlesTextures.currentParticlePositions = tmp
+
+          const command = this.primitives.updatePosition.commandToExecute
+          if (command) {
+            command.outputTexture = this.particlesTextures.currentParticlePositions
           }
+        }
+      }),
+
+      copyTo3D: new CustomPrimitive({
+        commandType: 'Draw',
+        uniformMap: {
+          currentParticlePositions: () => this.particlesTextures.currentParticlePositions,
+        },
+        vertexShaderSource: ShaderManager.getViewportQuadVS(),
+        attributeLocations: {
+          position: 0,
+          st: 1
+        },
+        geometry: this.getFullscreenQuad(),
+        primitiveType: PrimitiveType.TRIANGLES,
+        fragmentShaderSource: ShaderManager.getCopyPositions(),
+        isDynamic: () => this.options.dynamic,
+        rawRenderState: {
+          viewport: new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize)
+        },
+        preExecute: () => {
+
+          const command = this.primitives.copyTo3D.commandToExecute
+          if (command) {
+            command.framebuffer = new FramebufferSlice({
+              context: this.context,
+              colorTextures: [this.particlesTextures.historicalPositions],
+              destroyAttachments: false,
+              viewport: new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize),
+              depth: this.currentPosition
+            })
+          }
+          //increment head of ring buffer
+          this.currentPosition = (this.currentPosition + 1) % this.numPositions;
         }
       }),
 
       calculateGenTime: new CustomPrimitive({
         commandType: 'Compute',
         uniformMap: {
-          currentParticlesPosition: () => this.particlesTextures.particlePositions[this.currentPosition],
-          prevParticlesGenTime: () => this.particlesTextures.particleTimes[(this.currentPosition - 1 + this.numPositions) % this.numPositions],
+          currentParticlesPosition: () => this.particlesTextures.currentParticlePositions,
+          prevParticlesGenTime: () => this.particlesTextures.prevParticleTimes,
+          currentLayer: () => this.currentPosition,
+          numLayers: () => this.numPositions,
           currentTime: () => performance.now(),
           particleLifeTime: () => this.options.particleLifeTime,
           randomCoefficient: () => Math.random()
         },
         fragmentShaderSource: ShaderManager.getCalculateGenTimeShader(),
-        outputTexture: this.particlesTextures.particleTimes[this.currentPosition],
+        outputTexture: this.particlesTextures.currentParticleTimes,
         isDynamic: () => this.options.dynamic,
         preExecute: () => {
+
+          //swap textures
+          const tmp = this.particlesTextures.prevParticleTimes
+          this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
+          this.particlesTextures.currentParticleTimes = tmp
+
           if (this.primitives.calculateGenTime.commandToExecute) {
-            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.particleTimes[(this.currentPosition + 1) % this.numPositions];
+            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.currentParticleTimes;
           }
         }
       }),

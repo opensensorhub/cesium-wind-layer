@@ -1,7 +1,8 @@
 #version 300 es
 precision highp float;
+precision highp sampler3D;
 
-uniform sampler2D currentParticlesPosition;
+uniform sampler2D prevParticlesPosition;
 uniform sampler2D particlesGenTime;
 
 // range (min, max)
@@ -139,9 +140,7 @@ vec2 calculateWindNorm(vec2 speed) {
 }
 
 void main() {
-
-    // texture coordinate must be normalized
-    vec2 lonLat = texture(currentParticlesPosition, v_textureCoordinates).rg;
+    vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
     vec2 speedOrigin = getWindComponents(lonLat);
     vec2 speed = calculateSpeedByRungeKutta2(lonLat) * frameRateAdjustment;
     vec2 speedInLonLat = convertSpeedUnitToLonLat(lonLat, speed);

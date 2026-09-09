@@ -1,5 +1,6 @@
 #version 300 es
 precision highp float;
+precision highp sampler3D;
 
 in vec2 st;
 in vec3 normal;
@@ -20,10 +21,11 @@ in vec3 normal;
 #define e2 6.69437999014e-3
 #endif
 
-uniform sampler2D currentParticlesPosition;
-uniform sampler2D postProcessingPosition;
+uniform sampler3D particlesPosition;
 uniform sampler2D particlesGenTime;
 
+uniform float currentLayer;
+uniform float numLayers;
 uniform float currentTime;
 uniform float particleFadeInTime;
 uniform float particleFadeOutTime;
@@ -163,8 +165,11 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
 void main() {
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
 
-    vec4 currentPosition = texture(currentParticlesPosition, particleIndex).rgba;
-    vec4 nextPosition = texture(postProcessingPosition, particleIndex).rgba;
+    float currentZ = (currentLayer + 0.5) / numLayers;
+    float nextZ = (mod(currentLayer + 1.0, numLayers) + 0.5) / numLayers;
+
+    vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
+    vec4 nextPosition = texture(particlesPosition,  vec3(particleIndex, nextZ)).rgba;
 
     float isAnyRandomPointUsed = nextPosition.w + currentPosition.w;
 
