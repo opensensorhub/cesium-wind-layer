@@ -17,7 +17,6 @@ export class WindParticleSystem {
     this.viewerParameters = viewerParameters;
     this.computing = new WindParticlesComputing(context, windData, options, viewerParameters, scene);
     this.rendering = new WindParticlesRendering(context, options, viewerParameters, this.computing);
-    this.clearFramebuffers();
   }
 
   getPrimitives(): CustomPrimitive[] {
@@ -35,23 +34,8 @@ export class WindParticleSystem {
     return primitives;
   }
 
-  clearFramebuffers() {
-    const clearCommand = new ClearCommand({
-      color: new Color(0.0, 0.0, 0.0, 0.0),
-      depth: 1.0,
-      framebuffer: undefined,
-      pass: Pass.OPAQUE
-    });
-
-    Object.keys(this.rendering.framebuffers).forEach((key) => {
-      clearCommand.framebuffer = this.rendering.framebuffers[key as keyof typeof this.rendering.framebuffers];
-      clearCommand.execute(this.context);
-    });
-  }
-
   clearParticles() {
     this.computing.destroyParticlesTextures();
-    this.clearFramebuffers()
   }
 
   changeOptions(options: Partial<WindLayerOptions>) {

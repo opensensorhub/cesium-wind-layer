@@ -1,9 +1,8 @@
 #version 300 es
 precision highp float;
 
-//in vec4 speed;
-in float timeAlpha;
 in vec2 textureCoordinate;
+in float alpha;
 
 uniform vec2 domain;
 uniform vec2 displayRange;
@@ -21,7 +20,7 @@ void main() {
     // 组合颜色和透明度
     //fragColor = vec4(baseColor.rgb * inRange, inRange * timeAlpha);
 
-    fragColor = vec4(1.0);
+    fragColor = vec4(1.0, 1.0, 1.0, alpha);
 
 
     float segmentsDepth = texture(segmentsDepthTexture, textureCoordinate).r;

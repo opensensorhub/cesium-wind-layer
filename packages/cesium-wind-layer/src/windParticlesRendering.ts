@@ -15,8 +15,6 @@ export class WindParticlesRendering {
   public primitives!: ReturnType<typeof this.createPrimitives>;
   public colorTable: Texture;
   textures: ReturnType<typeof this.createRenderingTextures>;
-  framebuffers: ReturnType<typeof this.createRenderingFramebuffers>;
-  private texSize = 8192
 
   constructor(context: any, options: WindLayerOptions, viewerParameters: any, computing: WindParticlesComputing) {
     this.context = context;
@@ -31,62 +29,21 @@ export class WindParticlesRendering {
 
     this.colorTable = this.createColorTableTexture();
     this.textures = this.createRenderingTextures();
-    this.framebuffers = this.createRenderingFramebuffers();
     this.primitives = this.createPrimitives();
   }
 
   createRenderingTextures() {
-    const colorTextureOptions = {
-      context: this.context,
-      width: this.texSize,
-      height: this.texSize,
-      pixelFormat: PixelFormat.RGBA,
-      pixelDatatype: PixelDatatype.UNSIGNED_BYTE
-    };
     const depthTextureOptions = {
       context: this.context,
-      width: this.texSize,
-      height: this.texSize,
+      width: this.context.drawingBufferWidth,
+      height: this.context.drawingBufferHeight,
       pixelFormat: PixelFormat.DEPTH_COMPONENT,
       pixelDatatype: PixelDatatype.UNSIGNED_INT
     };
 
     return {
-      segmentsColor: new Texture(colorTextureOptions),
       segmentsDepth: new Texture(depthTextureOptions),
-
-      //use 2 for ping-pong
-      currentTrailsColor: new Texture(colorTextureOptions),
-      currentTrailsDepth: new Texture(depthTextureOptions),
-      nextTrailsColor: new Texture(colorTextureOptions),
-      nextTrailsDepth: new Texture(depthTextureOptions),
     }
-  }
-
-  createRenderingFramebuffers() {
-    return {
-      segments: new Framebuffer({
-        context: this.context,
-        colorTextures: [this.textures.segmentsColor],
-        depthTexture: this.textures.segmentsDepth
-      }),
-      currentTrails: new Framebuffer({
-        context: this.context,
-        colorTextures: [this.textures.currentTrailsColor],
-        depthTexture: this.textures.currentTrailsDepth
-      }),
-      nextTrails: new Framebuffer({
-        context: this.context,
-        colorTextures: [this.textures.nextTrailsColor],
-        depthTexture: this.textures.nextTrailsDepth
-      })
-    }
-  }
-
-  destoryRenderingFramebuffers() {
-    Object.values(this.framebuffers).forEach((framebuffer: any) => {
-      framebuffer.destroy();
-    });
   }
 
   private createColorTableTexture(): Texture {
@@ -115,69 +72,58 @@ export class WindParticlesRendering {
     });
   }
 
-  createSegmentsGeometry(): Geometry {
-    const repeatVertex = 4, texureSize = this.options.particlesTextureSize;
-    // 坐标系
-    //  z
-    //  | /y
-    //  |/
-    //  o------x
-    let st: any = []; // 纹理数组 st坐标系，左下角被定义为(0,0), 右上角为(1,1)，用于传入到顶点着色器中指代粒子的位置
-    for (let s = 0; s < texureSize; s++) {
-      for (let t = 0; t < texureSize; t++) {
-        for (let i = 0; i < repeatVertex; i++) {
-          st.push(s / texureSize);
-          st.push(t / texureSize);
-        }
+createSegmentsGeometry(): Geometry {
+  const texureSize = this.options.particlesTextureSize;
+
+  let st: number[] = [];
+  let normal: number[] = [];
+  let vertexIndexes: number[] = [];
+  let vertexCount = 0;
+  let particleCount = 0;
+
+  for (let s = 0; s < texureSize; s++) {
+    for (let t = 0; t < texureSize; t++) {
+      const u = s / texureSize;
+      const v = t / texureSize;
+      for (let j = 0; j < this.computing.numPositions; j++) {
+        st.push(u, v);
+        st.push(u, v); 
+        st.push(u, v); 
+        st.push(u, v);
+
+        // (normal offset, ring buffer index, particle id)
+        normal.push(-1, j, particleCount);
+        normal.push(1, j, particleCount);
+        normal.push(-1, j + 1, particleCount);
+        normal.push(1, j + 1, particleCount);
+
+        vertexIndexes.push(
+          vertexCount + 0, vertexCount + 1, vertexCount + 2,
+          vertexCount + 1, vertexCount + 3, vertexCount + 2
+        );
+
+        vertexCount += 4;
       }
     }
-    st = new Float32Array(st);
-
-    const particlesCount = this.options.particlesTextureSize ** 2;
-
-    let normal: any = [];
-    for (let i = 0; i < particlesCount; i++) {
-      normal.push(
-        // (point to use, offset sign, not used component)
-        -1, -1, 0,
-        -1, 1, 0,
-        1, -1, 0,
-        1, 1, 0,
-      )
-    }
-    normal = new Float32Array(normal);
-
-    let vertexIndexes: any = []; // 索引,一个粒子矩形由两个三角形组成
-    for (let i = 0, vertex = 0; i < particlesCount; i++) {
-      vertexIndexes.push(
-        // 第一个三角形用的顶点
-        vertex + 0, vertex + 1, vertex + 2,
-        // 第二个三角形用的顶点
-        vertex + 2, vertex + 1, vertex + 3,
-      )
-
-      vertex += repeatVertex;
-    }
-    vertexIndexes = new Uint32Array(vertexIndexes);
-
-    const geometry = new Geometry({
-      attributes: new (GeometryAttributes as any)({
-        st: new GeometryAttribute({
-          componentDatatype: ComponentDatatype.FLOAT,
-          componentsPerAttribute: 2,
-          values: st
-        }),
-        normal: new GeometryAttribute({
-          componentDatatype: ComponentDatatype.FLOAT,
-          componentsPerAttribute: 3,
-          values: normal
-        }),
-      }),
-      indices: vertexIndexes
-    });
-
-    return geometry;
+    particleCount++;
   }
+
+  return new Geometry({
+    attributes: new (GeometryAttributes as any)({
+      st: new GeometryAttribute({
+        componentDatatype: ComponentDatatype.FLOAT,
+        componentsPerAttribute: 2,
+        values: new Float32Array(st)
+      }),
+      normal: new GeometryAttribute({
+        componentDatatype: ComponentDatatype.FLOAT,
+        componentsPerAttribute: 3,
+        values: new Float32Array(normal)
+      }),
+    }),
+    indices: new Uint32Array(vertexIndexes)
+  });
+}
 
   createHeatmapGeometry(): Geometry {
     return RectangleGeometry.createGeometry(new RectangleGeometry({
@@ -202,38 +148,6 @@ export class WindParticlesRendering {
     });
   }
 
-  private getFullscreenQuad() {
-    const atts = new GeometryAttributes();
-    atts.position = new GeometryAttribute({
-					componentDatatype: ComponentDatatype.FLOAT,
-					componentsPerAttribute: 3,
-					//  v3----v2
-					//  |     |
-					//  |     |
-					//  v0----v1
-					values: new Float32Array([
-						-1, -1, 0, // v0
-						1, -1, 0, // v1
-						1, 1, 0, // v2
-						-1, 1, 0, // v3
-					])
-				});
-        atts.st = new GeometryAttribute({
-					componentDatatype: ComponentDatatype.FLOAT,
-					componentsPerAttribute: 2,
-					values: new Float32Array([
-						0, 0,
-						1, 0,
-						1, 1,
-						0, 1,
-					])
-			});
-		return new Geometry({
-			attributes: atts,
-      indices: new Uint32Array([3, 2, 0, 0, 2, 1])
-    });
-	}
-
   private createPrimitives() {
     const segments = new CustomPrimitive({
       commandType: 'Draw',
@@ -245,10 +159,10 @@ export class WindParticlesRendering {
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
-        particlesGenTime: () => this.computing.particlesTextures.currentParticleTimes,
-        currentLayer: () => this.computing.currentPosition,
+        currentLayer: () => this.computing.currentPosition - 1,
         numLayers: () => this.computing.numPositions,
         currentTime: () => performance.now(),
+        numParticles: () => this.options.particlesTextureSize ** 2,
         particleFadeInTime: () => this.options.particleFadeInTime,
         particleFadeOutTime: () => this.options.particleFadeOutTime,
         lonRange: () => new Cartesian2(this.computing.windData.bounds.west, this.computing.windData.bounds.east),
@@ -281,7 +195,7 @@ export class WindParticlesRendering {
         depthTest: {
           enabled: true
         },
-        depthMask: true,
+        depthMask: false,
         blending: {
           enabled: true,
           blendEquation: WebGLRenderingContext.FUNC_ADD,
@@ -433,9 +347,6 @@ export class WindParticlesRendering {
   }
 
   destroy(): void {
-    Object.values(this.framebuffers).forEach((framebuffer: any) => {
-      framebuffer.destroy();
-    });
     Object.values(this.primitives).forEach((primitive: any) => {
       primitive.destroy();
     });

@@ -29,7 +29,7 @@ export class WindParticlesComputing {
   frameRate: number = 60;
   frameRateAdjustment: number = 1;
   currentPosition: number = 0
-  numPositions: number = 8
+  numPositions: number = 32
 
   constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
     this.context = context;

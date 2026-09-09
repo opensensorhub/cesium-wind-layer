@@ -22,10 +22,10 @@ in vec3 normal;
 #endif
 
 uniform sampler3D particlesPosition;
-uniform sampler2D particlesGenTime;
 
 uniform float currentLayer;
 uniform float numLayers;
+uniform float numParticles;
 uniform float currentTime;
 uniform float particleFadeInTime;
 uniform float particleFadeOutTime;
@@ -39,12 +39,8 @@ uniform vec2 lonRange;
 
 // 添加输出变量传递给片元着色器
 //out vec4 speed;
-out float timeAlpha;
+out float alpha;
 out vec2 textureCoordinate;
-
-float normalizeMinMax(float val, float min, float max) {
-    return (val - min)/(max - min);
-}
 
 //https://en.wikipedia.org/wiki/Hann_function
 //https://www.desmos.com/calculator/ar8uhyf9ir
@@ -116,7 +112,7 @@ mat3 createEnuToECEFRot(float sinLon, float cosLon, float sinLat, float cosLat) 
     return mat3(e, n, u);
 }
 
-vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float lengthOffset, float normalizedSpeed) {
+vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float normalizedSpeed) {
     float lonA = radians(pointALonLat.x);
     float latA = radians(pointALonLat.y);
     float lonB = radians(pointBLonLat.x);
@@ -140,16 +136,13 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     vec3 pointAEnu = ecefToEnuRot * pointA;
     vec3 pointBEnu = ecefToEnuRot * pointB;
 
-    float dist = distance(pointA, pointB);
-
     //get head and side vector of quad
     vec2 length = normalize(pointBEnu - pointAEnu).xy;
     vec2 width = vec2(-length.y, length.x);
 
     float quadWidthMeters = mix(lineWidth.x, lineWidth.y, normalizedSpeed);
-    float quadLengthMeters = dist;
 
-    vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters) + (length * lengthOffset * quadLengthMeters), 0.0);
+    vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters), 0.0);
 
     return pointA + (enuToEcefRot * offsetEnu);
 }
@@ -163,25 +156,27 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
 // }
 
 void main() {
+
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
 
-    float currentZ = (currentLayer + 0.5) / numLayers;
-    float nextZ = (mod(currentLayer + 1.0, numLayers) + 0.5) / numLayers;
+    float currentZ = (normal.y + 0.5) / numLayers;
+    float nextZ = (mod(normal.y + 1.0, numLayers) + 0.5) / numLayers;
+
+    float distanceToHead = mod(normal.y - currentLayer + numLayers, numLayers);
 
     vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
     vec4 nextPosition = texture(particlesPosition,  vec3(particleIndex, nextZ)).rgba;
 
-    float isAnyRandomPointUsed = nextPosition.w + currentPosition.w;
+    float isAnyRandomPointUsed = nextPosition.w;
+    bool isInvalid = (isAnyRandomPointUsed > 0.0) || (normal.y == currentLayer);
 
-    vec3 newPos = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.y, normal.x, currentPosition.z);
+    vec3 newPos = calculateOffsetOnNormalDirection(currentPosition.xy, nextPosition.xy, normal.x, currentPosition.z);
 
-    float isDiscard = float(isAnyRandomPointUsed > 0.0);
-
-    gl_Position = czm_modelViewProjection * vec4(newPos, 1.0) * (1.0/(1.0 - isDiscard)); //returns NaN and discards triangle if marked to be discarded
-
-    vec2 particleGenTime = texture(particlesGenTime, particleIndex).rg;
-
-    float delta = currentTime - particleGenTime.x;
-    timeAlpha = hannFade(delta, particleFadeInTime, particleFadeOutTime, particleGenTime.y);
+    if(isInvalid) {
+        gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
+    } else {
+        gl_Position = czm_modelViewProjection * vec4(newPos, 1.0); //returns NaN and discards triangle if marked to be discarded
+    }
+    alpha = distanceToHead/numLayers;
     textureCoordinate = st;
 }
