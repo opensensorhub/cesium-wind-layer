@@ -102,7 +102,6 @@ void main() {
         currentPosition.z
     );
 
-
     gl_Position = (float(!isInvalid) * czm_modelViewProjection * vec4(newPos, 1.0)) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
 
     // Alpha fades nicely from tail (0.0) to head (1.0)
