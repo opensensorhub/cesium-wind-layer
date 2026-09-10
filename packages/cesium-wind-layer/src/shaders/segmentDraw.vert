@@ -30,7 +30,6 @@ uniform vec2 lineWidth;
 // 添加输出变量传递给片元着色器
 out float speed;
 out float alpha;
-out vec2 textureCoordinate;
 
 vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
@@ -112,6 +111,5 @@ void main() {
 
     // Alpha fades nicely from tail (0.0) to head (1.0)
     alpha = segmentStep / numLayers;
-    textureCoordinate = st;
     speed = currentPosition.z;
 }

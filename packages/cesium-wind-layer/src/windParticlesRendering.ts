@@ -14,7 +14,6 @@ export class WindParticlesRendering {
   private computing: WindParticlesComputing;
   public primitives!: ReturnType<typeof this.createPrimitives>;
   public colorTable: Texture;
-  textures: ReturnType<typeof this.createRenderingTextures>;
 
   constructor(context: any, options: WindLayerOptions, viewerParameters: any, computing: WindParticlesComputing) {
     this.context = context;
@@ -28,22 +27,7 @@ export class WindParticlesRendering {
     }
 
     this.colorTable = this.createColorTableTexture();
-    this.textures = this.createRenderingTextures();
     this.primitives = this.createPrimitives();
-  }
-
-  createRenderingTextures() {
-    const depthTextureOptions = {
-      context: this.context,
-      width: this.context.drawingBufferWidth,
-      height: this.context.drawingBufferHeight,
-      pixelFormat: PixelFormat.DEPTH_COMPONENT,
-      pixelDatatype: PixelDatatype.UNSIGNED_INT
-    };
-
-    return {
-      segmentsDepth: new Texture(depthTextureOptions),
-    }
   }
 
   private createColorTableTexture(): Texture {
@@ -169,7 +153,6 @@ createSegmentsGeometry(): Geometry {
           const width = this.options.particleWidth || DefaultOptions.particleWidth;
           return new Cartesian2(width.min, width.max);
         },
-        segmentsDepthTexture: () => this.textures.segmentsDepth,
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
