@@ -70,12 +70,8 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     mat3 enuToEcefRot = createEnuToECEFRot(sinLonA, cosLonA, sinLatA, cosLatA);
     mat3 ecefToEnuRot = transpose(enuToEcefRot);
 
-    //do vector rotations
-    vec3 pointAEnu = ecefToEnuRot * pointA;
-    vec3 pointBEnu = ecefToEnuRot * pointB;
-
     //get head and side vector of quad
-    vec2 length = normalize(pointBEnu - pointAEnu).xy;
+    vec2 length = normalize(ecefToEnuRot * (pointB - pointA)).xy;
     vec2 width = vec2(-length.y, length.x);
 
     float quadWidthMeters = mix(lineWidth.x, lineWidth.y, normalizedSpeed);
