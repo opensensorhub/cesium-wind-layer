@@ -85,7 +85,7 @@ createSegmentsGeometry(): Geometry {
     for (let t = 0; t < texureSize; t++) {
       const u = s / texureSize;
       const v = t / texureSize;
-      for (let j = 0; j < this.computing.numPositions; j++) {
+      for (let j = 0; j < this.options.numberOfSamples; j++) {
         st.push(
           u, v,
           u, v
@@ -163,7 +163,7 @@ createSegmentsGeometry(): Geometry {
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
         currentLayer: () => this.computing.currentPosition - 1,
-        numLayers: () => this.computing.numPositions,
+        numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
         lineWidth: () => {
           const width = this.options.particleWidth || DefaultOptions.particleWidth;

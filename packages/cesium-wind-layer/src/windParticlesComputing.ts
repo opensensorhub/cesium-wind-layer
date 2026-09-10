@@ -26,7 +26,6 @@ export class WindParticlesComputing {
   frameRate: number = 60;
   frameRateAdjustment: number = 1;
   currentPosition: number = 0
-  numPositions: number = 16
 
   constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
     this.context = context;
@@ -160,12 +159,12 @@ export class WindParticlesComputing {
       context: this.context,
       width: this.options.particlesTextureSize,
       height: this.options.particlesTextureSize,
-      depth: this.numPositions,
+      depth: this.options.numberOfSamples,
       pixelFormat: PixelFormat.RGBA,
       pixelDatatype: PixelDatatype.FLOAT,
       flipY: false,
       source: {
-        arrayBufferView: new Float32Array(this.options.particlesTextureSize * this.options.particlesTextureSize * 4 * this.numPositions).fill(0)
+        arrayBufferView: new Float32Array(this.options.particlesTextureSize * this.options.particlesTextureSize * 4 * this.options.numberOfSamples).fill(0)
       },
       sampler: new Sampler({
         minificationFilter: TextureMinificationFilter.NEAREST,
@@ -250,7 +249,7 @@ export class WindParticlesComputing {
             })
           }
           //increment head of ring buffer
-          this.currentPosition = (this.currentPosition + 1) % this.numPositions;
+          this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
         }
       }),
     };

@@ -22,23 +22,6 @@ export interface WindLayerOptions {
   speedFactor: number;
 
   /**
-   * Total time particle stays alive before regeneration, in milliseconds
-   */
-  particleLifeTime: number;
-
-  /**
-   * Time for particle to fade in, in milliseconds.
-   * particleFadeInTime + particleFadeOutTime <= particleLifeTime
-   */
-  particleFadeInTime: number;
-
-  /**
-   * Time for particle to fade out, in milliseconds.
-   * particleFadeInTime + particleFadeOutTime <= particleLifeTime
-   */
-  particleFadeOutTime: number;
-
-  /**
    * Whether to flip the Y-axis of the wind data. Default is false.
    */
   flipY: boolean;
@@ -91,6 +74,8 @@ export interface WindLayerOptions {
    * Lat lon bounds for displaying data.
    */
   displayBounds: Rectangle;
+
+  numberOfSamples: number;
 }
 
 export interface WindDataDemention {
