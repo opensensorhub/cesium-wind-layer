@@ -95,7 +95,6 @@ export class WindLayer {
   private particleSystem: WindParticleSystem;
   private viewerParameters: {
     dataBounds: Rectangle;
-    pixelSize: number;
     sceneMode: SceneMode;
   };
   private screenSamples: Cartesian2[]
@@ -128,7 +127,6 @@ export class WindLayer {
     this.updateScreenSamples();
     this.viewerParameters = {
       dataBounds: Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north),
-      pixelSize: 1000.0,
       sceneMode: this.scene.mode
     };
     this.updateViewerParameters();

@@ -193,7 +193,7 @@ export class WindParticlesComputing {
           U: () => this.windTextures.U,
           V: () => this.windTextures.V,
           speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
-          speedScaleFactor: () => (this.viewerParameters.pixelSize + 50) * this.options.speedFactor,
+          speedScaleFactor: () => 1000 * this.options.speedFactor,
           frameRateAdjustment: () => this.frameRateAdjustment,
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),
           minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
