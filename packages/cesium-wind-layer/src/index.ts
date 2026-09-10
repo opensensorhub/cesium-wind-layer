@@ -26,13 +26,11 @@ export const DefaultOptions: WindLayerOptions = {
   domain: undefined,
   displayRange: undefined,
   dynamic: true,
-  particleFadeInTime: 500,
-  particleFadeOutTime: 500,
-  particleLifeTime: 2000,
   heatmapOpacity: 1,
   particlesOpacity: 1,
-  trailFade: 0.97,
-  displayBounds: Rectangle.MAX_VALUE
+  displayBounds: Rectangle.MAX_VALUE,
+  numberOfSamples: 16,
+  dropRate: 0.003,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 

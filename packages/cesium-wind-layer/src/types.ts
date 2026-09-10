@@ -65,17 +65,20 @@ export interface WindLayerOptions {
   particlesOpacity: number;
 
   /**
-   * How much trails fade every frame. Clamped to [0,1].
-   * 0 is equivalent to no trails, 1 is equivalent to never fading trails
-   */
-  trailFade: number;
-
-  /**
    * Lat lon bounds for displaying data.
    */
   displayBounds: Rectangle;
 
+  /**
+   * Controls the number of historical positions, which affects the length of the trails
+   */
   numberOfSamples: number;
+
+  /**
+   * Rate at which particles are dropped (reset). Default is 0.003.
+   * Controls the lifecycle of particles.
+   */
+  dropRate: number;
 }
 
 export interface WindDataDemention {

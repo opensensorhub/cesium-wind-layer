@@ -201,6 +201,7 @@ export class WindParticlesComputing {
           lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
           randomCoefficient: () => Math.random(),
+          dropRate: () => this.options.dropRate
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
         isDynamic: () => this.options.dynamic,

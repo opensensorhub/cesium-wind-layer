@@ -21,6 +21,7 @@ uniform vec2 maximum; // maximum of each dimension
 
 uniform float speedScaleFactor;
 uniform float frameRateAdjustment;
+uniform float dropRate;
 
 // pseudo-random generator
 const vec3 randomConstants = vec3(12.9898, 78.233, 4375.85453);
@@ -150,8 +151,8 @@ void main() {
     vec2 seed2 = speed.rg + v_textureCoordinates;
     float randomNumber = rand(seed2, vec2(0.0, 1.0));
 
-    float isNotExpired = float(randomNumber >= 0.003);
-    float isExpired = float(randomNumber < 0.003);
+    float isNotExpired = float(randomNumber >= dropRate);
+    float isExpired = float(randomNumber < dropRate);
 
     vec2 randomParticle = generateRandomParticle(seed);
     fragColor = isExpired * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
