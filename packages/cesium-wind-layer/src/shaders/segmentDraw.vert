@@ -25,40 +25,12 @@ uniform sampler3D particlesPosition;
 
 uniform float currentLayer;
 uniform float numLayers;
-uniform float numParticles;
-uniform float currentTime;
-uniform float particleFadeInTime;
-uniform float particleFadeOutTime;
 uniform vec2 lineWidth;
-uniform vec2 domain;
-uniform bool is3D;
-uniform vec2 latDisplayRange;
-uniform vec2 lonDisplayRange;
-uniform vec2 latRange;
-uniform vec2 lonRange;
 
 // 添加输出变量传递给片元着色器
-//out vec4 speed;
+out float speed;
 out float alpha;
 out vec2 textureCoordinate;
-
-//https://en.wikipedia.org/wiki/Hann_function
-//https://www.desmos.com/calculator/ar8uhyf9ir
-float fadeIn(float x, float L, float f0) {
-    return 0.5 - (0.5 * cos((czm_pi*x)/f0));
-}
-
-float fadeOut(float x, float L, float f1) {
-    return 0.5 - (0.5 * cos(((czm_pi*x)/f1) - ((czm_pi*(L-(2.0*f1)))/f1)));
-}
-
-float hannFade(float x, float f0, float f1, float L) {
-    return float(x > 0.0 && x <= f0) * fadeIn(x, L, f0) + float(x > f0 && x <=  L - f1) + float(x > L-f1 && x <= L) * fadeOut(x, L, f1);
-}
-
-// vec2 projectLonLatToTextureSpace(vec2 lonLat) {
-//     return (vec2(normalizeMinMax(lonLat.x, lonRange.x, lonRange.y), normalizeMinMax(lonLat.y, latRange.x, latRange.y)) * 2.0) - 1.0;
-// }
 
 vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
@@ -69,39 +41,6 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     cartesian.z = ((b * b) / (a * a) * N_Phi + h) * sinLat;
     return cartesian;
 }
-
-// //https://hal.science/hal-01704943v2/document
-// vec2 ecefToLonLat(vec3 ecef) {
-
-//     float one_third = 1.0/3.0;
-//     float a2 = a*a;
-//     float w2 = dot(ecef.xy, ecef.xy);
-//     float l = e2/2.0;
-//     float l2 = l*l;
-//     float m = w2/a2;
-//     float n = pow(((1.0-e2)* ecef.z)/b, 2.0);
-//     float p = (m + n - (4.0 * l2))/6.0;
-//     float G = m * n * l2;
-//     float H = (2.0 * p * p * p) + G;
-//     float C = pow(H + G + (2.0 * sqrt(H*G)), one_third)/pow(2.0, one_third);
-//     float i = -((2.0*l2) + m + n)/2.0;
-//     float P = p * p;
-//     float B = (i/3.0) - C - (P/C);
-//     float k = l2*(l2 - m - n);
-//     float t = sqrt(sqrt((B*B) - k) - ((B+i)/2.0)) - (sign(m-n) * sqrt(abs((B-i)/2.0)));
-//     float F = (t*t*t*t) + (2.0*i*t*t) + (2.0 * l * (m-n) * t) + k;
-//     float Dfdt = (4.0*t*t*t) + (4.0*i*t) + (2.0*l*(m-n));
-//     float delta_t = -F/Dfdt;
-//     float u = t + delta_t + l;
-//     float v = t + delta_t - l;
-//     float w = sqrt(w2);
-
-
-//     float latRad = atan(ecef.z*u, w*v);
-//     float lonRad = atan(ecef.y, ecef.x);
-
-//     return vec2(degrees(lonRad), degrees(latRad));
-// }
 
 //https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
 mat3 createEnuToECEFRot(float sinLon, float cosLon, float sinLat, float cosLat) {
@@ -147,14 +86,6 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
     return pointA + (enuToEcefRot * offsetEnu);
 }
 
-// bool particleOutbound(vec2 lonLat) {
-
-//     float lon = lonLat.x;
-//     float lat = lonLat.y;
-
-//     return (lon < lonDisplayRange.x || lon > lonDisplayRange.y) || (lat < latDisplayRange.x || lat > latDisplayRange.y);
-// }
-
 void main() {
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
     float segmentStep = normal.y;
@@ -182,4 +113,5 @@ void main() {
     // Alpha fades nicely from tail (0.0) to head (1.0)
     alpha = segmentStep / numLayers;
     textureCoordinate = st;
+    speed = currentPosition.z;
 }

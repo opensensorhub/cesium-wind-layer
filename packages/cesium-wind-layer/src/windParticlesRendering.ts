@@ -164,28 +164,11 @@ createSegmentsGeometry(): Geometry {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
         currentLayer: () => this.computing.currentPosition - 1,
         numLayers: () => this.computing.numPositions,
-        currentTime: () => performance.now(),
-        numParticles: () => this.options.particlesTextureSize ** 2,
-        particleFadeInTime: () => this.options.particleFadeInTime,
-        particleFadeOutTime: () => this.options.particleFadeOutTime,
-        lonRange: () => new Cartesian2(this.computing.windData.bounds.west, this.computing.windData.bounds.east),
-        latRange: () => new Cartesian2(this.computing.windData.bounds.south, this.computing.windData.bounds.north),
         colorTable: () => this.colorTable,
-        domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
-        displayRange: () => {
-          const displayRange = new Cartesian2(
-            this.options.displayRange?.min ?? this.computing.windData.speed.min,
-            this.options.displayRange?.max ?? this.computing.windData.speed.max
-          );
-          return displayRange;
-        },
         lineWidth: () => {
           const width = this.options.particleWidth || DefaultOptions.particleWidth;
           return new Cartesian2(width.min, width.max);
         },
-        is3D: () => this.viewerParameters.sceneMode === SceneMode.SCENE3D,
-        latDisplayRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.south), CesiumMath.toDegrees(this.options.displayBounds.north)),
-        lonDisplayRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds.west), CesiumMath.toDegrees(this.options.displayBounds.east)),
         segmentsDepthTexture: () => this.textures.segmentsDepth,
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),

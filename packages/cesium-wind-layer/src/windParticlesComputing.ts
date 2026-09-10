@@ -13,15 +13,12 @@ export class WindParticlesComputing {
     V: Texture;
   };
   particlesTextures!: {
-    prevParticleTimes: Texture;
-    currentParticleTimes: Texture;
     prevParticlePositions: Texture;
     currentParticlePositions: Texture;
     historicalPositions: Texture3D;
   };
   primitives!: {
     updatePosition: CustomPrimitive;
-    calculateGenTime: CustomPrimitive;
     copyTo3D: CustomPrimitive;
   };
   windData: Required<WindData>;
@@ -177,10 +174,8 @@ export class WindParticlesComputing {
     }
 
     this.particlesTextures = {
-      prevParticleTimes: new Texture(options),
-      currentParticleTimes: new Texture(options),
-      prevParticlePositions: new Texture(options3d),
-      currentParticlePositions: new Texture(options3d),
+      prevParticlePositions: new Texture(options),
+      currentParticlePositions: new Texture(options),
       historicalPositions: new Texture3D(options3d),
     }
   }
@@ -198,21 +193,15 @@ export class WindParticlesComputing {
           U: () => this.windTextures.U,
           V: () => this.windTextures.V,
           speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
-          speedScaleFactor: () => {
-            return (this.viewerParameters.pixelSize + 50) * this.options.speedFactor;
-          },
+          speedScaleFactor: () => (this.viewerParameters.pixelSize + 50) * this.options.speedFactor,
           frameRateAdjustment: () => this.frameRateAdjustment,
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),
           minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
           maximum: () => new Cartesian2(this.windData.bounds.east, this.windData.bounds.north),
           prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
-          particlesGenTime: () => this.particlesTextures.currentParticleTimes,
-          currentTime: () => performance.now(),
           lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
-          randomCoefficient: function () {
-            return Math.random();
-          },
+          randomCoefficient: () => Math.random(),
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
         isDynamic: () => this.options.dynamic,
@@ -262,33 +251,6 @@ export class WindParticlesComputing {
           }
           //increment head of ring buffer
           this.currentPosition = (this.currentPosition + 1) % this.numPositions;
-        }
-      }),
-
-      calculateGenTime: new CustomPrimitive({
-        commandType: 'Compute',
-        uniformMap: {
-          currentParticlesPosition: () => this.particlesTextures.currentParticlePositions,
-          prevParticlesGenTime: () => this.particlesTextures.prevParticleTimes,
-          currentLayer: () => this.currentPosition,
-          numLayers: () => this.numPositions,
-          currentTime: () => performance.now(),
-          particleLifeTime: () => this.options.particleLifeTime,
-          randomCoefficient: () => Math.random()
-        },
-        fragmentShaderSource: ShaderManager.getCalculateGenTimeShader(),
-        outputTexture: this.particlesTextures.currentParticleTimes,
-        isDynamic: () => this.options.dynamic,
-        preExecute: () => {
-
-          //swap textures
-          const tmp = this.particlesTextures.prevParticleTimes
-          this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
-          this.particlesTextures.currentParticleTimes = tmp
-
-          if (this.primitives.calculateGenTime.commandToExecute) {
-            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.currentParticleTimes;
-          }
         }
       }),
     };
