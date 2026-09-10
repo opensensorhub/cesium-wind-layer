@@ -37,26 +37,8 @@ float rand(vec2 seed, vec2 range) {
     return temp * (range.y - range.x) + range.x;
 }
 
-float randomLongitude(vec2 seed, vec2 range)
-{
-    float r = rand(seed, vec2(0.0, 1.0));
-
-    if (range.x <= range.y) {
-        return mix(range.x, range.y, r);
-    }
-
-    // crosses antimeridian
-    float lon = mix(range.x, range.y + 360.0, r);
-
-    if (lon > 180.0) {
-        lon -= 360.0;
-    }
-
-    return lon;
-}
-
 vec2 generateRandomParticle(vec2 seed) {
-    return vec2(randomLongitude(seed, lonRange), rand(-seed, latRange));
+    return vec2(rand(seed, lonRange), rand(-seed, latRange));
 }
 
 vec2 getInterval(vec2 maximum, vec2 minimum, vec2 dimension) {
