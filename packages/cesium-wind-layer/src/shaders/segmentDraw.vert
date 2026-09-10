@@ -84,8 +84,8 @@ vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, floa
 void main() {
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
     float segmentStep = normal.y;
-    float currentLayerIndex = mod(currentLayer + 1.0 + segmentStep, numLayers);
-    float nextLayerIndex = mod(currentLayer + 1.0 + segmentStep + 1.0, numLayers);
+    float currentLayerIndex = mod(currentLayer + segmentStep + 1.0, numLayers);
+    float nextLayerIndex = mod(currentLayer + segmentStep + 2.0, numLayers);
     float currentZ = (currentLayerIndex + 0.5) / numLayers;
     float nextZ = (nextLayerIndex + 0.5) / numLayers;
 
