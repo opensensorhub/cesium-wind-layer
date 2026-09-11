@@ -34,6 +34,7 @@ export const DefaultOptions: WindLayerOptions = {
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 
+const DT = (1 / 60) * 1000; // Target fixed simulation step (e.g., 60 Hz)
 
 export class WindLayer {
   private _showParticles: boolean = true;
@@ -99,7 +100,9 @@ export class WindLayer {
   private _isDestroyed: boolean = false;
   private primitives: CustomPrimitive[] = [];
   private eventListeners: Map<WindLayerEventType, Set<WindLayerEventCallback>> = new Map();
-
+  private accumulator = 0
+  private currentTime = performance.now();
+  
   /**
    * WindLayer class for visualizing wind field data with particle animation in Cesium.
    * 
@@ -142,6 +145,23 @@ export class WindLayer {
     window.addEventListener("resize", () => {
       this.updateScreenSamples.bind(this);
       this.updateViewerParameters.bind(this)
+    });
+
+    //use fixed loop for compute shaders
+    //https://andreleite.com/posts/2025/game-loop/fixed-timestep-game-loop/
+    this.scene.preRender.addEventListener(() => {
+      const newTime  = performance.now();
+      let frameTime = newTime - this.currentTime;
+      this.currentTime = newTime;
+
+      if (frameTime > 250) frameTime = 250;
+
+      this.accumulator += frameTime;
+
+      while (this.accumulator >= DT) {
+        this.particleSystem.computing.execute();
+        this.accumulator -= DT;
+      }
     });
   }
 

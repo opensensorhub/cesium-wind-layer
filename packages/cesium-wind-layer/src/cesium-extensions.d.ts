@@ -74,6 +74,15 @@ declare module 'cesium' {
     vertexArray?: VertexArray;
     framebuffer?: Framebuffer;
     outputTexture?: Texture;
+    execute(engine: ComputeEngine)
+  }
+
+  export class ComputeEngine {
+    constructor(context: any)
+  }
+
+  export class PassState {
+    constructor(context: any)
   }
 
   export class ClearCommand {

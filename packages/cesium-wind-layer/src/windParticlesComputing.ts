@@ -1,4 +1,4 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry, PassState } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
@@ -307,5 +307,11 @@ export class WindParticlesComputing {
     this.destroyParticlesTextures()
     Object.values(this.primitives).forEach(primitive => primitive.destroy());
     this.frameRateMonitor.destroy();
+  }
+
+  execute() {
+    const ps = new PassState(this.context)
+    this.primitives.updatePosition.execute(this.context, ps)
+    this.primitives.copyTo3D.execute(this.context, ps)
   }
 }

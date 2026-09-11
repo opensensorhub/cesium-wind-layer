@@ -21,8 +21,6 @@ export class WindParticleSystem {
 
   getPrimitives(): CustomPrimitive[] {
     const primitives = [
-      this.computing.primitives.updatePosition,
-      this.computing.primitives.copyTo3D,
       this.rendering.primitives.heatmap,
       this.rendering.primitives.segments,
     ];

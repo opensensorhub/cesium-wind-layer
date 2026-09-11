@@ -14,6 +14,7 @@ import {
   Matrix4,
   BufferUsage,
   destroyObject,
+  ComputeEngine,
 } from 'cesium';
 
 interface CustomPrimitiveOptions {
@@ -164,6 +165,30 @@ export default class CustomPrimitive {
 
     if (defined(this.commandToExecute)) {
       frameState.commandList.push(this.commandToExecute);
+    }
+  }
+
+  execute(context: any, passState: any) {
+
+    if (!this.show) {
+      return;
+    }
+
+    if (!defined(this.commandToExecute)) {
+      this.commandToExecute = this.createCommand(context);
+    }
+
+    if (defined(this.preExecute)) {
+      this.preExecute();
+    }
+
+    if (defined(this.commandToExecute)) {
+      if(this.commandType == "Compute") {
+        (this.commandToExecute as ComputeCommand).execute(new ComputeEngine(context))
+      } else {
+        (this.commandToExecute as DrawCommand).execute(context, passState)
+      }
+      
     }
   }
 

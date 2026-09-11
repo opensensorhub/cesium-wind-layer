@@ -123,7 +123,7 @@ vec2 calculateWindNorm(vec2 speed) {
 void main() {
     vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
     vec2 speedOrigin = getWindComponents(lonLat);
-    vec2 speed = calculateSpeedByRungeKutta2(lonLat) * frameRateAdjustment;
+    vec2 speed = calculateSpeedByRungeKutta2(lonLat); //* frameRateAdjustment;
     vec2 speedInLonLat = convertSpeedUnitToLonLat(lonLat, speed);
 
     // 计算下一个位置
