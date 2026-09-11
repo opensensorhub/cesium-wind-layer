@@ -38,42 +38,9 @@ export class WindParticlesComputing {
       samplingWindow: 1.0,
       quietPeriod: 0.0
     });
-    this.initFrameRate();
     this.createWindTextures();
     this.createParticlesTextures();
     this.createComputingPrimitives();
-  }
-
-  private initFrameRate() {
-    const updateFrameRate = () => {
-      // avoid update frame rate when frame rate is too low
-      if (this.frameRateMonitor.lastFramesPerSecond > 20) {
-        this.frameRate = this.frameRateMonitor.lastFramesPerSecond;
-        this.frameRateAdjustment = 60 / Math.max(this.frameRate, 1);
-      }
-    }
-
-    // Initial frame rate calculation
-    updateFrameRate();
-
-    // Use setInterval instead of requestAnimationFrame
-    const intervalId = setInterval(updateFrameRate, 1000);
-
-    // Monitor frame rate changes
-    this.frameRateMonitor.lowFrameRate.addEventListener((scene, frameRate) => {
-      console.warn(`Low frame rate detected: ${frameRate} FPS`);
-    });
-
-    this.frameRateMonitor.nominalFrameRate.addEventListener((scene, frameRate) => {
-      console.log(`Frame rate returned to normal: ${frameRate} FPS`);
-    });
-
-    // Add cleanup method to destroy
-    const originalDestroy = this.destroy.bind(this);
-    this.destroy = () => {
-      clearInterval(intervalId);
-      originalDestroy();
-    };
   }
 
   createWindTextures() {
@@ -193,7 +160,6 @@ export class WindParticlesComputing {
           V: () => this.windTextures.V,
           speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
           speedScaleFactor: () => 1000 * this.options.speedFactor,
-          frameRateAdjustment: () => this.frameRateAdjustment,
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),
           minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
           maximum: () => new Cartesian2(this.windData.bounds.east, this.windData.bounds.north),
