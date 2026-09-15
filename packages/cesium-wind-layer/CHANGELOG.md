@@ -1,5 +1,12 @@
 # cesium-wind-layer
 
+## 1.0.0
+
+- added particle trail curves
+- removed useViewerBounds flag, user now passes displayBounds rectangle
+- added toggleable heatmap
+- move shaders to standalone files
+
 ## 0.10.1
 
 ### Patch Changes
