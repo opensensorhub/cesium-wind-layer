@@ -159,7 +159,9 @@ export class WindLayer {
       this.accumulator += frameTime;
 
       while (this.accumulator >= DT) {
-        this.particleSystem.computing.execute();
+        if(this.showParticles) {
+          this.particleSystem.computing.execute();
+        }
         this.accumulator -= DT;
       }
     });
