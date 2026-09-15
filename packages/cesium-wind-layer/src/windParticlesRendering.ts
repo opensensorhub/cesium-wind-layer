@@ -147,6 +147,7 @@ createSegmentsGeometry(): Geometry {
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
         currentLayer: () => this.computing.currentPosition - 1,
+        opacity: () => this.options.particlesOpacity,
         numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
         lineWidth: () => {

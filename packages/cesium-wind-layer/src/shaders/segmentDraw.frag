@@ -4,6 +4,7 @@ precision highp float;
 in float alpha;
 in float speed;
 
+uniform float opacity;
 uniform sampler2D colorTable;
 
 out vec4 fragColor;
@@ -11,5 +12,5 @@ out vec4 fragColor;
 void main() {
     vec4 baseColor = texture(colorTable, vec2(speed, 0.0));
 
-    fragColor = vec4(baseColor.rgb, alpha);
+    fragColor = vec4(baseColor.rgb, alpha * opacity);
 }
