@@ -1,6 +1,6 @@
 {
-  "name": "cesium-wind-layer",
-  "version": "0.10.1",
+  "name": "@georobotix/cesium-wind-layer",
+  "version": "1.0.0",
   "publishConfig": {
     "access": "public"
   },
