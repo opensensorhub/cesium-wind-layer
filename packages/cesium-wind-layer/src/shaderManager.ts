@@ -6,8 +6,15 @@ import renderHeatmapFragmentShader from './shaders/heatmapDraw.frag';
 import screenDrawVertexShader from './shaders/screenDraw.vert';
 import ViewportQuad from './shaders/ViewportQuad.vert'
 import copyPositions from './shaders/copyPositions.frag'
+import calculateGenTime from './shaders/calculateGenTime.frag'
 
 export class ShaderManager {
+
+  static getCalculateGenTimeShader(): ShaderSource {
+    return new ShaderSource({
+      sources: [calculateGenTime]
+    });
+  }
 
   static getUpdatePositionShader(): ShaderSource {
     return new ShaderSource({

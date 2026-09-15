@@ -30,7 +30,7 @@ export const DefaultOptions: WindLayerOptions = {
   particlesOpacity: 1,
   displayBounds: Rectangle.MAX_VALUE,
   numberOfSamples: 16,
-  dropRate: 0.003,
+  particleLifeTime: 2000,
 }
 
 const NUMBER_OF_SAMPLES_PER_AXIS = 128 

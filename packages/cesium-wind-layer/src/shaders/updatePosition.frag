@@ -3,12 +3,14 @@ precision highp float;
 precision highp sampler3D;
 
 uniform sampler2D prevParticlesPosition;
+uniform sampler2D particlesGenTime;
 
 // range (min, max)
 uniform vec2 lonRange;
 uniform vec2 latRange;
 
 uniform float randomCoefficient;
+uniform float currentTime;
 
 // the size of UV textures: width = lon, height = lat
 uniform sampler2D U; // eastward wind
@@ -130,11 +132,14 @@ void main() {
     vec2 nextParticle = lonLat + speedInLonLat;
 
     vec2 seed = nextParticle.xy + v_textureCoordinates;
-    vec2 seed2 = speed.rg + v_textureCoordinates;
-    float randomNumber = rand(seed2, vec2(0.0, 1.0));
 
-    float isNotExpired = float(randomNumber >= dropRate);
-    float isExpired = float(randomNumber < dropRate);
+    vec2 particleGenTime = texture(particlesGenTime, v_textureCoordinates).rg;
+
+    float deltaTime = currentTime - particleGenTime.x;
+    
+    float timeDiff = deltaTime - particleGenTime.y;
+    float isNotExpired = float(timeDiff < 0.0);
+    float isExpired = float(timeDiff >= 0.0);
 
     vec2 randomParticle = generateRandomParticle(seed);
     fragColor = isExpired * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle

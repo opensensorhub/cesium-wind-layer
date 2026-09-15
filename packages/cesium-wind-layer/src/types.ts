@@ -75,10 +75,9 @@ export interface WindLayerOptions {
   numberOfSamples: number;
 
   /**
-   * Rate at which particles are dropped (reset). Default is 0.003.
-   * Controls the lifecycle of particles.
+   * Expiry time of each particle
    */
-  dropRate: number;
+  particleLifeTime: number;
 }
 
 export interface WindDataDemention {

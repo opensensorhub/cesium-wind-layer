@@ -13,12 +13,15 @@ export class WindParticlesComputing {
     V: Texture;
   };
   particlesTextures!: {
+    prevParticleTimes: Texture;
+    currentParticleTimes: Texture;
     prevParticlePositions: Texture;
     currentParticlePositions: Texture;
     historicalPositions: Texture3D;
   };
   primitives!: {
     updatePosition: CustomPrimitive;
+    calculateGenTime: CustomPrimitive;
     copyTo3D: CustomPrimitive;
   };
   windData: Required<WindData>;
@@ -140,6 +143,8 @@ export class WindParticlesComputing {
     }
 
     this.particlesTextures = {
+      prevParticleTimes: new Texture(options),
+      currentParticleTimes: new Texture(options),
       prevParticlePositions: new Texture(options),
       currentParticlePositions: new Texture(options),
       historicalPositions: new Texture3D(options3d),
@@ -167,7 +172,8 @@ export class WindParticlesComputing {
           lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
           randomCoefficient: () => Math.random(),
-          dropRate: () => this.options.dropRate
+          particlesGenTime: () => this.particlesTextures.currentParticleTimes,
+          currentTime: () => performance.now(),
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
         isDynamic: () => this.options.dynamic,
@@ -217,6 +223,31 @@ export class WindParticlesComputing {
           }
           //increment head of ring buffer
           this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
+        }
+      }),
+
+      calculateGenTime: new CustomPrimitive({
+        commandType: 'Compute',
+        uniformMap: {
+          currentParticlesPosition: () => this.particlesTextures.currentParticlePositions,
+          prevParticlesGenTime: () => this.particlesTextures.prevParticleTimes,
+          currentTime: () => performance.now(),
+          particleLifeTime: () => this.options.particleLifeTime,
+          randomCoefficient: () => Math.random()
+        },
+        fragmentShaderSource: ShaderManager.getCalculateGenTimeShader(),
+        outputTexture: this.particlesTextures.currentParticleTimes,
+        isDynamic: () => this.options.dynamic,
+        preExecute: () => {
+
+          //swap textures
+          const tmp = this.particlesTextures.prevParticleTimes
+          this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
+          this.particlesTextures.currentParticleTimes = tmp
+
+          if (this.primitives.calculateGenTime.commandToExecute) {
+            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.currentParticleTimes;
+          }
         }
       }),
     };
@@ -277,6 +308,7 @@ export class WindParticlesComputing {
 
   execute() {
     const ps = new PassState(this.context)
+    this.primitives.calculateGenTime.execute(this.context, ps)
     this.primitives.updatePosition.execute(this.context, ps)
     this.primitives.copyTo3D.execute(this.context, ps)
   }
