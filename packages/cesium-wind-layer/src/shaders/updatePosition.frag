@@ -69,48 +69,17 @@ vec2 getWindComponents(vec2 lonLat) {
     return vec2(u, v);
 }
 
-vec2 lengthOfLonLat(vec2 lonLat) {
-    // unit conversion: meters -> longitude latitude degrees
-    // see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
-
-    // Calculate the length of a degree of latitude and longitude in meters
-    float latitude = radians(lonLat.y);
-
-    float term1 = 111132.92;
-    float term2 = 559.82 * cos(2.0 * latitude);
-    float term3 = 1.175 * cos(4.0 * latitude);
-    float term4 = 0.0023 * cos(6.0 * latitude);
-    float latLength = term1 - term2 + term3 - term4;
-
-    float term5 = 111412.84 * cos(latitude);
-    float term6 = 93.5 * cos(3.0 * latitude);
-    float term7 = 0.118 * cos(5.0 * latitude);
-    float longLength = term5 - term6 + term7;
-
-    return vec2(longLength, latLength);
-}
-
-vec2 convertSpeedUnitToLonLat(vec2 lonLat, vec2 speed) {
-    vec2 lonLatLength = lengthOfLonLat(lonLat);
-    float u = speed.x / lonLatLength.x;
-    float v = speed.y / lonLatLength.y;
-    vec2 windVectorInLonLat = vec2(u, v);
-
-    return windVectorInLonLat;
-}
-
 vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
     // see https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Second-order_methods_with_two_stages for detail
-    const float h = 0.5;
+    float h = 0.5 * speedScaleFactor;
 
     vec2 y_n = lonLat;
     vec2 f_n = getWindComponents(lonLat);
-    vec2 midpoint = y_n + 0.5 * h * convertSpeedUnitToLonLat(y_n, f_n) * speedScaleFactor;
-    vec2 speed = h * getWindComponents(midpoint) * speedScaleFactor;
+    vec2 midpoint = y_n + 0.5 * h * f_n;
+    vec2 speed = h * getWindComponents(midpoint);
 
     return speed;
 }
-
 
 vec2 calculateWindNorm(vec2 speed) {
     float speedLength = length(speed.xy);
@@ -125,8 +94,7 @@ vec2 calculateWindNorm(vec2 speed) {
 void main() {
     vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
     vec2 speedOrigin = getWindComponents(lonLat);
-    vec2 speed = calculateSpeedByRungeKutta2(lonLat); //* frameRateAdjustment;
-    vec2 speedInLonLat = convertSpeedUnitToLonLat(lonLat, speed);
+    vec2 speedInLonLat = calculateSpeedByRungeKutta2(lonLat); //* frameRateAdjustment;
 
     // 计算下一个位置
     vec2 nextParticle = lonLat + speedInLonLat;

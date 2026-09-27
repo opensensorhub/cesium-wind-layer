@@ -5,6 +5,7 @@ import {
   SceneMode,
   Rectangle,
   Entity,
+  Math as CesiumMath
 } from 'cesium';
 
 import { WindLayerOptions, WindData, WindDataAtLonLat } from './types';
@@ -33,16 +34,16 @@ export const DefaultOptions: WindLayerOptions = {
   particleLifeTime: 2000,
 }
 
-const NUMBER_OF_SAMPLES_PER_AXIS = 128 
+const NUMBER_OF_SAMPLES_PER_AXIS = 128
 const DT = (1 / 60) * 1000; // Target fixed simulation step (e.g., 60 Hz)
 
 export class WindLayer {
   private _showParticles: boolean = true;
   private _showHeatmap: boolean = true;
   private _resized: boolean = false;
-  private entity: undefined|Entity = undefined;
+  private entity: undefined | Entity = undefined;
   windData: Required<WindData>;
-  
+
   get show(): boolean {
     return this._showParticles;
   }
@@ -53,13 +54,13 @@ export class WindLayer {
       this._showParticles = value;
       update = true;
     }
-    
+
     if (this._showHeatmap !== value) {
       this._showHeatmap = value;
       update = true;
     }
 
-    if(update) {
+    if (update) {
       this.updatePrimitivesVisibility(value);
     }
   }
@@ -102,7 +103,7 @@ export class WindLayer {
   private eventListeners: Map<WindLayerEventType, Set<WindLayerEventCallback>> = new Map();
   private accumulator = 0
   private currentTime = performance.now();
-  
+
   /**
    * WindLayer class for visualizing wind field data with particle animation in Cesium.
    * 
@@ -125,7 +126,6 @@ export class WindLayer {
     this.options = { ...WindLayer.defaultOptions, ...options };
     this.windData = this.processWindData(windData);
     this.screenSamples = []
-    this.updateScreenSamples();
     this.viewerParameters = {
       dataBounds: Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north),
       sceneMode: this.scene.mode
@@ -133,64 +133,93 @@ export class WindLayer {
     this.updateViewerParameters();
 
     this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.viewerParameters, this.scene);
-    
+
     this.add();
 
     this.setupEventListeners();
   }
 
   private setupEventListeners(): void {
-    this.viewer.camera.percentageChanged = 0.01;
-    this.scene.morphComplete.addEventListener(this.updateViewerParameters.bind(this));
-    window.addEventListener("resize", () => {
-      this.updateScreenSamples.bind(this);
-      this.updateViewerParameters.bind(this)
-    });
+    this.scene.preRender.addEventListener(this.computeLoop.bind(this));
+  }
 
-    //use fixed loop for compute shaders
-    //https://andreleite.com/posts/2025/game-loop/fixed-timestep-game-loop/
-    this.scene.preRender.addEventListener(() => {
-      const newTime  = performance.now();
-      let frameTime = newTime - this.currentTime;
-      this.currentTime = newTime;
+  //use fixed loop for compute shaders
+  //https://andreleite.com/posts/2025/game-loop/fixed-timestep-game-loop/
+  private computeLoop() {
+    const newTime = performance.now();
+    let frameTime = newTime - this.currentTime;
+    this.currentTime = newTime;
 
-      if (frameTime > 250) frameTime = 250;
+    if (frameTime > 250) frameTime = 250;
 
-      this.accumulator += frameTime;
+    this.accumulator += frameTime;
 
-      while (this.accumulator >= DT) {
-        if(this.showParticles) {
-          this.particleSystem.computing.execute();
-        }
-        this.accumulator -= DT;
+    while (this.accumulator >= DT) {
+      if (this.showParticles) {
+        this.particleSystem.computing.execute();
       }
-    });
+      this.accumulator -= DT;
+    }
   }
 
   private removeEventListeners(): void {
-    this.scene.morphComplete.removeEventListener(this.updateViewerParameters.bind(this));
-    window.removeEventListener("resize", this.updateViewerParameters.bind(this));
+    this.scene.preRender.removeEventListener(this.computeLoop.bind(this))
   }
 
-  private updateScreenSamples() {
+  private lengthOfLonLat(lat: number) {
+    // unit conversion: meters -> longitude latitude degrees
+    // see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
+    const clampedLat = Math.max(-89.9, Math.min(89.9, lat));
+    const latRad = CesiumMath.toRadians(clampedLat)
 
-    const canvas = this.viewer.canvas
-    
-    this.screenSamples = [];
+    const term1 = 111132.92;
+    const term2 = 559.82 * Math.cos(2.0 * latRad);
+    const term3 = 1.175 * Math.cos(4.0 * latRad);
+    const term4 = 0.0023 * Math.cos(6.0 * latRad);
+    const latLength = term1 - term2 + term3 - term4;
 
-    for (let y = 0; y <= NUMBER_OF_SAMPLES_PER_AXIS; y++) {
-      for (let x = 0; x <= NUMBER_OF_SAMPLES_PER_AXIS; x++) {
-        this.screenSamples.push(
-          new Cartesian2(
-            (x / NUMBER_OF_SAMPLES_PER_AXIS) * canvas.clientWidth,
-            (y / NUMBER_OF_SAMPLES_PER_AXIS) * canvas.clientHeight
-          )
-        );
-      }
+    const term5 = 111412.84 * Math.cos(latRad);
+    const term6 = 93.5 * Math.cos(3.0 * latRad);
+    const term7 = 0.118 * Math.cos(5.0 * latRad);
+    const longLength = term5 - term6 + term7;
+
+    return {
+      x: longLength,
+      y: latLength
+    };
+  }
+
+  private convertSpeedUnitToLonLat(lat: number, u: number, v: number) {
+    const lonLatLength = this.lengthOfLonLat(lat);
+    return {
+      u: u / lonLatLength.x,
+      v: v / lonLatLength.y
     }
   }
 
   private processWindData(windData: WindData): Required<WindData> {
+
+    const newU = new Float32Array(windData.u.array.length)
+    const newV = new Float32Array(windData.v.array.length)
+    for (let h = 0; h < windData.height; h++) {
+      for (let w = 0; w < windData.width; w++) {
+
+        const i = (h * windData.width) + w
+        const u = windData.u.array[i]
+        const v = windData.v.array[i]
+
+        const lat = 90 - (h / (windData.height-1) * 180);
+        const clampedLat = Math.max(-88.0, Math.min(88.0, lat));
+        const speedInLonLat = this.convertSpeedUnitToLonLat(clampedLat, u, v);
+        
+        newU[i] = isNaN(speedInLonLat.u) ? 0.0 : speedInLonLat.u;
+        newV[i] = isNaN(speedInLonLat.v) ? 0.0 : speedInLonLat.v;
+      }
+    }
+
+    windData.u.array = newU
+    windData.v.array = newV
+
     if (windData.speed?.min === undefined || windData.speed?.max === undefined || windData.speed.array === undefined) {
       const speed = {
         array: new Float32Array(windData.u.array.length),
@@ -388,7 +417,7 @@ export class WindLayer {
   private updateParticlesVisibility(visibility?: boolean): void {
     const showParticles = visibility !== undefined ? visibility : this._showParticles;
     this.primitives.forEach(primitive => {
-      if(primitive.name !== 'heatmap') {
+      if (primitive.name !== 'heatmap') {
         primitive.show = showParticles;
       }
     });
@@ -397,7 +426,7 @@ export class WindLayer {
   private updateHeatmapVisibility(visibility?: boolean): void {
     const showHeatmap = visibility !== undefined ? visibility : this._showHeatmap;
     this.primitives.forEach(primitive => {
-      if(primitive.name === 'heatmap') {
+      if (primitive.name === 'heatmap') {
         primitive.show = showHeatmap;
       }
     });
