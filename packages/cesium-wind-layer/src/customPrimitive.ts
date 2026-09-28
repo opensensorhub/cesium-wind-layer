@@ -170,7 +170,7 @@ export default class CustomPrimitive {
 
   execute(context: any, passState: any) {
 
-    if (!this.show) {
+    if (!this.show || !this.isDynamic()) {
       return;
     }
 
