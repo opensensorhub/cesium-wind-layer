@@ -75,10 +75,10 @@ createSegmentsGeometry(): Geometry {
           u, v
         );
 
-        // (normal offset, ring buffer index, particle id)
+        //(normal offset, ring buffer index)
         normal.push(
-          -1, j, particleCount,
-          1, j, particleCount
+          -1, j,
+          1, j
         );
 
         vertexIndexes.push(
@@ -103,7 +103,7 @@ createSegmentsGeometry(): Geometry {
       }),
       normal: new GeometryAttribute({
         componentDatatype: ComponentDatatype.FLOAT,
-        componentsPerAttribute: 3,
+        componentsPerAttribute: 2,
         values: new Float32Array(normal)
       }),
     }),
