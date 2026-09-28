@@ -1,6 +1,6 @@
 {
   "name": "@georobotix/cesium-wind-layer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publishConfig": {
     "access": "public"
   },
@@ -27,11 +27,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hongfaqiu/cesium-wind-layer.git"
+    "url": "git+https://github.com/opensensorhub/cesium-wind-layer.git"
   },
   "bugs": {
-    "url": "https://github.com/hongfaqiu/cesium-wind-layer/issues"
+    "url": "https://github.com/opensensorhub/cesium-wind-layer/issues"
   },
-  "homepage": "https://github.com/hongfaqiu/cesium-wind-layer#readme",
+  "homepage": "https://github.com/opensensorhub/cesium-wind-layer#readme",
   "license": "MIT"
 }
