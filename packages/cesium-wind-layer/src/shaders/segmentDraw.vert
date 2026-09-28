@@ -44,6 +44,14 @@ vec4 calculateOffsetOnNormalDirection(vec3 pointAECEF, vec3 pointBECEF, float wi
     return pointA + vec4(10000.0 * normalVector * widthOffset, 0.0, 0.0);
 }
 
+vec2 restoreFloatAndBit(float modifiedNumber, uint bitIndex) {
+    uint uModified = floatBitsToUint(modifiedNumber);
+    uint bitState = (uModified >> bitIndex) & 1u;
+    uint uOriginal = uModified & ~(1u << bitIndex);
+
+    return vec2(float(bitState), uintBitsToFloat(uOriginal));
+}
+
 void main() {
     vec2 particleIndex = vec2(st.x, 1.0 - st.y);
     float segmentStep = normal.y;
@@ -55,7 +63,7 @@ void main() {
     vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
     vec4 nextPosition = texture(particlesPosition, vec3(particleIndex, nextZ)).rgba;
 
-    float isAnyRandomPointUsed = nextPosition.w;
+    float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x;
     bool isInvalid = (isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0);
 
     vec4 newPos = calculateOffsetOnNormalDirection(
@@ -66,7 +74,6 @@ void main() {
 
     gl_Position = (float(!isInvalid) * newPos) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
 
-    // Alpha fades nicely from tail (0.0) to head (1.0)
     alpha = segmentStep / numLayers;
-    speed = currentPosition.z;
+    speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 }

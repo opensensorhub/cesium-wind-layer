@@ -206,10 +206,6 @@ export class WindLayer {
 
     const newU = new Float32Array(windData.u.array.length)
     const newV = new Float32Array(windData.v.array.length)
-    let u_min = Number.POSITIVE_INFINITY;
-    let u_max = Number.NEGATIVE_INFINITY;
-    let v_min = Number.POSITIVE_INFINITY;
-    let v_max = Number.NEGATIVE_INFINITY;
     for (let h = 0; h < windData.height; h++) {
       for (let w = 0; w < windData.width; w++) {
 
@@ -219,19 +215,14 @@ export class WindLayer {
 
         const lat = 90 - (h / (windData.height-1) * 180);
         const speedInLonLat = this.convertSpeedUnitToLonLat(lat, u, v);
-        
-        u_min = Math.min(u_min, u);
-        u_max = Math.max(u_max, u);
-        v_min = Math.min(v_min, v);
-        v_max = Math.max(v_max, v);
 
         newU[i] = isNaN(speedInLonLat.u) ? 0.0 : speedInLonLat.u;
         newV[i] = isNaN(speedInLonLat.v) ? 0.0 : speedInLonLat.v;
       }
     }
 
-    windData.u_ll = {array: newU, min: u_min, max: u_max}
-    windData.v_ll = {array: newV, min: v_min, max: v_max}
+    windData.u_ll = { array: newU }
+    windData.v_ll = { array: newV }
 
     if (windData.speed?.min === undefined || windData.speed?.max === undefined || windData.speed.array === undefined) {
       const speed = {

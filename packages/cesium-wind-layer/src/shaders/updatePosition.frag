@@ -16,8 +16,10 @@ uniform float randomCoefficient;
 uniform float currentTime;
 
 // the size of UV textures: width = lon, height = lat
-uniform sampler2D U; // eastward wind
-uniform sampler2D V; // northward wind
+uniform sampler2D U; // eastward wind deg/s
+uniform sampler2D V; // northward wind deg/s
+uniform sampler2D u_ms; // eastward wind m/s
+uniform sampler2D v_ms; // northward wind m/s
 
 uniform vec2 speedRange; // (min, max)
 uniform vec2 dimension; // (lon, lat)
@@ -63,11 +65,13 @@ vec2 mapPositionToNormalizedIndex2D(vec2 lonLat) {
     return normalizedIndex2D;
 }
 
-vec2 getWindComponents(vec2 lonLat) {
+vec4 getWindComponents(vec2 lonLat) {
     vec2 normalizedIndex2D = mapPositionToNormalizedIndex2D(lonLat);
     float u = texture(U, normalizedIndex2D).r;
     float v = texture(V, normalizedIndex2D).r;
-    return vec2(u, v);
+    float u_raw = texture( u_ms, normalizedIndex2D).r;
+    float v_raw = texture( v_ms, normalizedIndex2D).r;
+    return vec4(u, v, u_raw, v_raw);
 }
 
 vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
@@ -75,21 +79,21 @@ vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
     float h = 0.5 * speedScaleFactor;
 
     vec2 y_n = lonLat;
-    vec2 f_n = getWindComponents(lonLat);
+    vec2 f_n = getWindComponents(lonLat).xy;
     vec2 midpoint = y_n + 0.5 * h * f_n;
-    vec2 speed = h * getWindComponents(midpoint);
+    vec2 speed = h * getWindComponents(midpoint).xy;
 
     return speed;
 }
 
 vec2 calculateWindNorm(vec2 speed) {
     float speedLength = length(speed.xy);
-    bool isSpeedZero = speedLength == 0.0;
+    //bool isSpeedZero = speedLength == 0.0;
 
     // Clamp speedLength to range
     float clampedSpeed = clamp(speedLength, speedRange.x, speedRange.y);
     float normalizedSpeed = (clampedSpeed - speedRange.x) / (speedRange.y - speedRange.x);
-    return vec2(speedLength, normalizedSpeed) * float(!isSpeedZero);
+    return vec2(speedLength, normalizedSpeed); //* float(!isSpeedZero);
 }
 
 bool particleOutbound(vec2 particle) {
@@ -98,7 +102,7 @@ bool particleOutbound(vec2 particle) {
 
 void main() {
     vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
-    vec2 speedOrigin = getWindComponents(lonLat);
+    vec2 speedOrigin = getWindComponents(lonLat).zw;
     vec2 speedInLonLat = calculateSpeedByRungeKutta2(lonLat); //* frameRateAdjustment;
 
     // 计算下一个位置

@@ -30,6 +30,15 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     return cartesian;
 }
 
+float setFloatBitToValue(float number, uint bitIndex, float bitValue) {
+    uint uValue = floatBitsToUint(number);
+    uValue &= ~(1u << bitIndex);
+    uint maskBit = uint(clamp(ceil(abs(bitValue)), 0.0, 1.0));
+    uValue |= (maskBit << bitIndex);
+    
+    return uintBitsToFloat(uValue);
+}
+
 void main() {
 
     vec4 position = texture(currentParticlePositions, v_textureCoordinates).rgba;
@@ -42,5 +51,5 @@ void main() {
     float sinLat = sin(lat);
     float cosLat = cos(lat);
 
-    fragColor = vec4(lonLatToECEF(sinLon, cosLon, sinLat, cosLat), position.w);
+    fragColor = vec4(lonLatToECEF(sinLon, cosLon, sinLat, cosLat), setFloatBitToValue(position.z, 31u, position.w));
 }

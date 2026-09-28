@@ -11,6 +11,8 @@ export class WindParticlesComputing {
   windTextures!: {
     U: Texture;
     V: Texture;
+    u_ms: Texture;
+    v_ms: Texture;
   };
   particlesTextures!: {
     prevParticleTimes: Texture;
@@ -71,6 +73,18 @@ export class WindParticlesComputing {
         ...options,
         source: {
           arrayBufferView: new Float32Array(this.windData.v_ll.array)
+        }
+      }),
+      u_ms: new Texture({
+        ...options,
+        source: {
+          arrayBufferView: new Float32Array(this.windData.u.array)
+        }
+      }),
+      v_ms: new Texture({
+        ...options,
+        source: {
+          arrayBufferView: new Float32Array(this.windData.v.array)
         }
       }),
     };
@@ -163,6 +177,8 @@ export class WindParticlesComputing {
         uniformMap: {
           U: () => this.windTextures.U,
           V: () => this.windTextures.V,
+          u_ms: () => this.windTextures.u_ms,
+          v_ms: () => this.windTextures.v_ms,
           speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
           speedScaleFactor: () => 1000 * this.options.speedFactor,
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),

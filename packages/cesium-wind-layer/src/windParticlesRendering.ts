@@ -183,8 +183,8 @@ createSegmentsGeometry(): Geometry {
       geometry: this.createHeatmapGeometry(),
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
-        U: () => this.computing.windTextures.U,
-        V: () =>  this.computing.windTextures.V,
+        U: () => this.computing.windTextures.u_ms,
+        V: () =>  this.computing.windTextures.v_ms,
         domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
         colorTable: () =>  this.colorTable,
         opacity: () => this.options.heatmapOpacity
