@@ -3,7 +3,7 @@ precision highp float;
 precision highp sampler3D;
 
 in vec2 st;
-in vec3 normal;
+in vec2 normal;
 
 #ifndef czm_pi
 #define czm_pi 3.141592653589793
