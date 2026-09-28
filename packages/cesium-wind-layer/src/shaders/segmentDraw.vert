@@ -9,76 +9,39 @@ in vec3 normal;
 #define czm_pi 3.141592653589793
 #endif
 
-#ifndef a
-#define a 6378137.0
-#endif
-
-#ifndef b
-#define b 6356752.3142
-#endif
-
-#ifndef e2
-#define e2 6.69437999014e-3
-#endif
-
 uniform sampler3D particlesPosition;
 
 uniform float currentLayer;
 uniform float numLayers;
+uniform float aspect;
 uniform vec2 lineWidth;
 
 // 添加输出变量传递给片元着色器
 out float speed;
 out float alpha;
 
-vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
-    float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
-    float h = 0.0; // it should be high enough otherwise the particle may not pass the terrain depth test
-    vec3 cartesian = vec3(0.0);
-    cartesian.x = (N_Phi + h) * cosLat * cosLon;
-    cartesian.y = (N_Phi + h) * cosLat * sinLon;
-    cartesian.z = ((b * b) / (a * a) * N_Phi + h) * sinLat;
-    return cartesian;
-}
+vec4 calculateOffsetOnNormalDirection(vec3 pointAECEF, vec3 pointBECEF, float widthOffset) {
 
-//https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
-mat3 createEnuToECEFRot(float sinLon, float cosLon, float sinLat, float cosLat) {
-    vec3 e = vec3(-sinLon, cosLon, 0.0);
-    vec3 n = vec3(-cosLon * sinLat, -sinLon * sinLat, cosLat);
-    vec3 u = vec3(cosLon * cosLat, sinLon * cosLat, sinLat);
-
-    return mat3(e, n, u);
-}
-
-vec3 calculateOffsetOnNormalDirection(vec2 pointALonLat, vec2 pointBLonLat, float widthOffset, float normalizedSpeed) {
-    float lonA = radians(pointALonLat.x);
-    float latA = radians(pointALonLat.y);
-    float lonB = radians(pointBLonLat.x);
-    float latB = radians(pointBLonLat.y);
-
-    float sinLonA = sin(lonA);
-    float cosLonA = cos(lonA);
-    float sinLatA = sin(latA);
-    float cosLatA = cos(latA);
-
-    vec3 pointA = lonLatToECEF(sinLonA, cosLonA, sinLatA, cosLatA);
-    vec3 pointB = lonLatToECEF(sin(lonB), cos(lonB), sin(latB), cos(latB));
+    vec4 pointA = czm_modelViewProjection * vec4(pointAECEF, 1.0);
+    vec4 pointB = czm_modelViewProjection * vec4(pointBECEF, 1.0);
 
     // create rotation matrices to convert ecef -> enu and vice versa
     // up vector will match vector A in this case
     //tangent plane runs through origin in ECEF coords
-    mat3 enuToEcefRot = createEnuToECEFRot(sinLonA, cosLonA, sinLatA, cosLatA);
-    mat3 ecefToEnuRot = transpose(enuToEcefRot);
+    //mat3 enuToEcefRot = createEnuToECEFRot(sinLonA, cosLonA, sinLatA, cosLatA);
+    //mat3 ecefToEnuRot = transpose(enuToEcefRot);
 
     //get head and side vector of quad
-    vec2 length = normalize(ecefToEnuRot * (pointB - pointA)).xy;
-    vec2 width = vec2(-length.y, length.x);
 
-    float quadWidthMeters = mix(lineWidth.x, lineWidth.y, normalizedSpeed);
+    vec2 aspectVec2 = vec2(aspect, 1.0);
+    vec2 pointA_XY = (pointA.xy / pointA.w) * aspectVec2;
+    vec2 pointB_XY = (pointB.xy / pointB.w) * aspectVec2;
 
-    vec3 offsetEnu = vec3((width * widthOffset * quadWidthMeters), 0.0);
+    vec2 direction = normalize(pointB_XY - pointA_XY);
+    vec2 normalVector = vec2(-direction.y, direction.x);
+    normalVector.x = normalVector.x / aspect;
 
-    return pointA + (enuToEcefRot * offsetEnu);
+    return pointA + vec4(10000.0 * normalVector * widthOffset, 0.0, 0.0);
 }
 
 void main() {
@@ -95,14 +58,13 @@ void main() {
     float isAnyRandomPointUsed = nextPosition.w;
     bool isInvalid = (isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0);
 
-    vec3 newPos = calculateOffsetOnNormalDirection(
-        currentPosition.xy, 
-        nextPosition.xy, 
-        normal.x, 
-        currentPosition.z
+    vec4 newPos = calculateOffsetOnNormalDirection(
+        currentPosition.xyz, 
+        nextPosition.xyz, 
+        normal.x
     );
 
-    gl_Position = (float(!isInvalid) * czm_modelViewProjection * vec4(newPos, 1.0)) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
+    gl_Position = (float(!isInvalid) * newPos) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
 
     // Alpha fades nicely from tail (0.0) to head (1.0)
     alpha = segmentStep / numLayers;

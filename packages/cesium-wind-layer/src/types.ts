@@ -67,7 +67,7 @@ export interface WindLayerOptions {
   /**
    * Lat lon bounds for displaying data.
    */
-  displayBounds: Rectangle;
+  displayBounds?: Rectangle;
 
   /**
    * Controls the number of historical positions, which affects the length of the trails
@@ -89,6 +89,8 @@ export interface WindDataDemention {
 export interface WindData {
   u: WindDataDemention;
   v: WindDataDemention;
+  u_ll?: WindDataDemention;
+  v_ll?: WindDataDemention;
   speed?: WindDataDemention;
   width: number;
   height: number;

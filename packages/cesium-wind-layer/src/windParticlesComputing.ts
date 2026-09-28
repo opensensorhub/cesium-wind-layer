@@ -64,13 +64,13 @@ export class WindParticlesComputing {
       U: new Texture({
         ...options,
         source: {
-          arrayBufferView: new Float32Array(this.windData.u.array)
+          arrayBufferView: new Float32Array(this.windData.u_ll.array)
         }
       }),
       V: new Texture({
         ...options,
         source: {
-          arrayBufferView: new Float32Array(this.windData.v.array)
+          arrayBufferView: new Float32Array(this.windData.v_ll.array)
         }
       }),
     };
@@ -171,6 +171,8 @@ export class WindParticlesComputing {
           prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
           lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
           latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
+          displayLonRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.west : this.windData.bounds.west), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.east : this.windData.bounds.east)),
+          displayLatRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.windData.bounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.windData.bounds.north)),
           randomCoefficient: () => Math.random(),
           particlesGenTime: () => this.particlesTextures.currentParticleTimes,
           currentTime: () => performance.now(),

@@ -9,6 +9,9 @@ uniform sampler2D particlesGenTime;
 uniform vec2 lonRange;
 uniform vec2 latRange;
 
+uniform vec2 displayLonRange;
+uniform vec2 displayLatRange;
+
 uniform float randomCoefficient;
 uniform float currentTime;
 
@@ -22,8 +25,6 @@ uniform vec2 minimum; // minimum of each dimension
 uniform vec2 maximum; // maximum of each dimension
 
 uniform float speedScaleFactor;
-uniform float frameRateAdjustment;
-uniform float dropRate;
 
 // pseudo-random generator
 const vec3 randomConstants = vec3(12.9898, 78.233, 4375.85453);
@@ -91,6 +92,10 @@ vec2 calculateWindNorm(vec2 speed) {
     return vec2(speedLength, normalizedSpeed) * float(!isSpeedZero);
 }
 
+bool particleOutbound(vec2 particle) {
+    return particle.y < displayLatRange.x || particle.y > displayLatRange.y || ((displayLonRange.x > -180.0 || displayLonRange.y < 180.0) && (particle.x < displayLonRange.x || particle.x > displayLonRange.y));
+}
+
 void main() {
     vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
     vec2 speedOrigin = getWindComponents(lonLat);
@@ -106,13 +111,12 @@ void main() {
     float deltaTime = currentTime - particleGenTime.x;
     
     float timeDiff = deltaTime - particleGenTime.y;
-    float isNotExpired = float(timeDiff < 0.0);
-    float isExpired = float(timeDiff >= 0.0);
+    bool isExpired = timeDiff >= 0.0 || particleOutbound(nextParticle);
 
     vec2 randomParticle = generateRandomParticle(seed);
-    fragColor = isExpired * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
+    fragColor = float(isExpired) * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
 
     //wrap arround dateline
     nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
-    fragColor += isNotExpired * vec4(nextParticle, calculateWindNorm(speedOrigin).y, 0.0);
+    fragColor += float(!isExpired) * vec4(nextParticle, calculateWindNorm(speedOrigin).y, 0.0);
 }

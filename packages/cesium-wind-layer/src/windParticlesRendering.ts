@@ -150,6 +150,7 @@ createSegmentsGeometry(): Geometry {
         opacity: () => this.options.particlesOpacity,
         numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
+        aspect: () => this.context.drawingBufferWidth / this.context.drawingBufferHeight,
         lineWidth: () => {
           const width = this.options.particleWidth || DefaultOptions.particleWidth;
           return new Cartesian2(width.min, width.max);

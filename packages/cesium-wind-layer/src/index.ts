@@ -29,7 +29,6 @@ export const DefaultOptions: WindLayerOptions = {
   dynamic: true,
   heatmapOpacity: 1,
   particlesOpacity: 1,
-  displayBounds: Rectangle.MAX_VALUE,
   numberOfSamples: 16,
   particleLifeTime: 2000,
 }
@@ -126,10 +125,16 @@ export class WindLayer {
     this.options = { ...WindLayer.defaultOptions, ...options };
     this.windData = this.processWindData(windData);
     this.screenSamples = []
+    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
     this.viewerParameters = {
-      dataBounds: Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north),
+      dataBounds: dataBounds,
       sceneMode: this.scene.mode
     };
+
+    if(this.options.displayBounds && !Rectangle.union(dataBounds, this.options.displayBounds).equals(dataBounds)) {
+      throw new Error('Display bounds must be inside data bounds');
+    }
+
     this.updateViewerParameters();
 
     this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.viewerParameters, this.scene);
@@ -169,8 +174,8 @@ export class WindLayer {
   private lengthOfLonLat(lat: number) {
     // unit conversion: meters -> longitude latitude degrees
     // see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
-    const clampedLat = Math.max(-89.9, Math.min(89.9, lat));
-    const latRad = CesiumMath.toRadians(clampedLat)
+
+    const latRad = CesiumMath.toRadians(lat)
 
     const term1 = 111132.92;
     const term2 = 559.82 * Math.cos(2.0 * latRad);
@@ -201,6 +206,10 @@ export class WindLayer {
 
     const newU = new Float32Array(windData.u.array.length)
     const newV = new Float32Array(windData.v.array.length)
+    let u_min = Number.POSITIVE_INFINITY;
+    let u_max = Number.NEGATIVE_INFINITY;
+    let v_min = Number.POSITIVE_INFINITY;
+    let v_max = Number.NEGATIVE_INFINITY;
     for (let h = 0; h < windData.height; h++) {
       for (let w = 0; w < windData.width; w++) {
 
@@ -209,16 +218,20 @@ export class WindLayer {
         const v = windData.v.array[i]
 
         const lat = 90 - (h / (windData.height-1) * 180);
-        const clampedLat = Math.max(-88.0, Math.min(88.0, lat));
-        const speedInLonLat = this.convertSpeedUnitToLonLat(clampedLat, u, v);
+        const speedInLonLat = this.convertSpeedUnitToLonLat(lat, u, v);
         
+        u_min = Math.min(u_min, u);
+        u_max = Math.max(u_max, u);
+        v_min = Math.min(v_min, v);
+        v_max = Math.max(v_max, v);
+
         newU[i] = isNaN(speedInLonLat.u) ? 0.0 : speedInLonLat.u;
         newV[i] = isNaN(speedInLonLat.v) ? 0.0 : speedInLonLat.v;
       }
     }
 
-    windData.u.array = newU
-    windData.v.array = newV
+    windData.u_ll = {array: newU, min: u_min, max: u_max}
+    windData.v_ll = {array: newV, min: v_min, max: v_max}
 
     if (windData.speed?.min === undefined || windData.speed?.max === undefined || windData.speed.array === undefined) {
       const speed = {
