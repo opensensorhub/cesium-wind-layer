@@ -60,24 +60,25 @@ void main() {
     float currentZ = (currentLayerIndex + 0.5) / numLayers;
     float nextZ = (nextLayerIndex + 0.5) / numLayers;
 
-    vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
     vec4 nextPosition = texture(particlesPosition, vec3(particleIndex, nextZ)).rgba;
 
     float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x;
-    bool isInvalid = (isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0);
 
-    speed = restoreFloatAndBit(currentPosition.w, 31u).y;
+    if((isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0)) {
+        gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
+    } else {
+        vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
 
-    float widthFactor = mix(lineWidth.x, lineWidth.y, speed);
+        speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 
-    vec4 newPos = calculateOffsetOnNormalDirection(
-        currentPosition.xyz, 
-        nextPosition.xyz, 
-        normal.x * widthFactor
-    );
+        float widthFactor = mix(lineWidth.x, lineWidth.y, speed);
 
-    gl_Position = (float(!isInvalid) * newPos) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
+        gl_Position = calculateOffsetOnNormalDirection(
+            currentPosition.xyz, 
+            nextPosition.xyz, 
+            normal.x * widthFactor
+        );
+    }
 
     alpha = segmentStep / numLayers;
-    
 }
