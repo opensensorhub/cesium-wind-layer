@@ -125,14 +125,14 @@ export class WindLayer {
     this.options = { ...WindLayer.defaultOptions, ...options };
     this.windData = this.processWindData(windData);
     this.screenSamples = []
-    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
-    this.viewerParameters = {
-      dataBounds: dataBounds,
-      sceneMode: this.scene.mode
-    };
+    console.log(this.windData.bounds.west)
 
-    if(this.options.displayBounds && !Rectangle.union(dataBounds, this.options.displayBounds).equals(dataBounds)) {
-      throw new Error('Display bounds must be inside data bounds');
+    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
+
+
+    this.viewerParameters = {
+      sceneMode: this.scene.mode,
+      dataBounds: dataBounds
     }
 
     this.updateViewerParameters();
@@ -323,8 +323,24 @@ export class WindLayer {
 
   private updateViewerParameters(): void {
     this.viewerParameters.sceneMode = this.scene.mode;
+    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
+
+    if(this.options.displayBounds) {
+      if(!Rectangle.union(dataBounds, this.options.displayBounds).equals(dataBounds)) {
+        console.warn('Display bounds larger than data bounds. Clamping to data bounds...');
+        this.updateOptions({...this.options, displayBounds: dataBounds})
+      }
+    }
+
+    this.viewerParameters = {
+      sceneMode: this.scene.mode,
+      dataBounds: dataBounds
+    }
+
     this.particleSystem?.applyViewerParameters(this.viewerParameters);
   }
+
+
 
   /**
    * Update the wind data of the wind layer.
@@ -334,6 +350,7 @@ export class WindLayer {
     if (this._isDestroyed) return;
     this.windData = this.processWindData(data);
     this.particleSystem.computing.updateWindData(this.windData);
+    this.updateViewerParameters()
     this.viewer.scene.requestRender();
     // Dispatch data change event
     this.dispatchEvent('dataChange', this.windData);
