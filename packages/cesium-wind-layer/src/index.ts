@@ -125,7 +125,6 @@ export class WindLayer {
     this.options = { ...WindLayer.defaultOptions, ...options };
     this.windData = this.processWindData(windData);
     this.screenSamples = []
-    console.log(this.windData.bounds.west)
 
     const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
 
