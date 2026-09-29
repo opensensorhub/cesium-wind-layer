@@ -31,6 +31,7 @@ export class WindParticlesComputing {
   frameRate: number = 60;
   frameRateAdjustment: number = 1;
   currentPosition: number = 0
+  framebufferSlices: FramebufferSlice[]
 
   constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
     this.context = context;
@@ -43,9 +44,11 @@ export class WindParticlesComputing {
       samplingWindow: 1.0,
       quietPeriod: 0.0
     });
+    this.framebufferSlices = []
     this.createWindTextures();
     this.createParticlesTextures();
     this.createComputingPrimitives();
+    this.createFramebufferSlices();
   }
 
   createWindTextures() {
@@ -121,6 +124,18 @@ export class WindParticlesComputing {
       indices: new Uint32Array([3, 2, 0, 0, 2, 1])
     });
   }
+  
+  private createFramebufferSlices() {
+    for(let i=0; i<this.options.numberOfSamples; i++) {
+      this.framebufferSlices.push(new FramebufferSlice({
+        context: this.context,
+        colorTextures: [this.particlesTextures.historicalPositions],
+        destroyAttachments: false,
+        viewport: new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize),
+        depth: i
+      }))
+    }
+  }
 
   createParticlesTextures() {
     const options = {
@@ -163,6 +178,11 @@ export class WindParticlesComputing {
       currentParticlePositions: new Texture(options),
       historicalPositions: new Texture3D(options3d),
     }
+  }
+
+  destroyFramebufferSlices() {
+    this.framebufferSlices.forEach(slice => slice.destroy())
+    this.framebufferSlices = []
   }
 
   destroyParticlesTextures() {
@@ -224,13 +244,7 @@ export class WindParticlesComputing {
 
           const command = this.primitives.copyTo3D.commandToExecute
           if (command) {
-            command.framebuffer = new FramebufferSlice({
-              context: this.context,
-              colorTextures: [this.particlesTextures.historicalPositions],
-              destroyAttachments: false,
-              viewport: new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize),
-              depth: this.currentPosition
-            })
+            command.framebuffer = this.framebufferSlices[this.currentPosition]
           }
           //increment head of ring buffer
           this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
@@ -279,7 +293,9 @@ export class WindParticlesComputing {
     
     if(updatedSamples) {
       this.destroyParticlesTextures()
+      this.destroyFramebufferSlices()
       this.createParticlesTextures()
+      this.createFramebufferSlices()
     }
   }
 
