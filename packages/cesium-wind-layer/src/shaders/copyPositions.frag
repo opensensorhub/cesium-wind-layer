@@ -3,6 +3,7 @@ precision highp float;
 precision highp sampler3D;
 
 uniform sampler2D currentParticlePositions;
+uniform float particleHeight;
 
 in vec2 v_textureCoordinates;
 
@@ -22,7 +23,7 @@ out vec4 fragColor;
 
 vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
     float N_Phi = a / sqrt(1.0 - e2 * sinLat * sinLat);
-    float h = 0.0; // it should be high enough otherwise the particle may not pass the terrain depth test
+    float h = particleHeight; // it should be high enough otherwise the particle may not pass the terrain depth test
     vec3 cartesian = vec3(0.0);
     cartesian.x = (N_Phi + h) * cosLat * cosLon;
     cartesian.y = (N_Phi + h) * cosLat * sinLon;

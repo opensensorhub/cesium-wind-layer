@@ -21,7 +21,8 @@ type WindLayerEventCallback = (data: WindData | WindLayerOptions) => void;
 export const DefaultOptions: WindLayerOptions = {
   particlesTextureSize: 100,
   speedFactor: 1.0,
-  particleWidth: { min: 5000, max: 10000 },
+  particleHeight: 1000,
+  lineWidth: { min: 1, max: 2 },
   colors: ['white'],
   flipY: false,
   domain: undefined,

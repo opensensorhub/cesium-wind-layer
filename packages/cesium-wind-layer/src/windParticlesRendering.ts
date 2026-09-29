@@ -152,7 +152,7 @@ createSegmentsGeometry(): Geometry {
         colorTable: () => this.colorTable,
         aspect: () => this.context.drawingBufferWidth / this.context.drawingBufferHeight,
         lineWidth: () => {
-          const width = this.options.particleWidth || DefaultOptions.particleWidth;
+          const width = this.options.lineWidth || DefaultOptions.lineWidth;
           return new Cartesian2(width.min, width.max);
         },
       },

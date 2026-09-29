@@ -214,6 +214,7 @@ export class WindParticlesComputing {
         commandType: 'Draw',
         uniformMap: {
           currentParticlePositions: () => this.particlesTextures.currentParticlePositions,
+          particleHeight: () => this.options.particleHeight || 0,
         },
         vertexShaderSource: ShaderManager.getViewportQuadVS(),
         attributeLocations: {

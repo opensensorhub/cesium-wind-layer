@@ -66,14 +66,18 @@ void main() {
     float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x;
     bool isInvalid = (isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0);
 
+    speed = restoreFloatAndBit(currentPosition.w, 31u).y;
+
+    float widthFactor = mix(lineWidth.x, lineWidth.y, speed);
+
     vec4 newPos = calculateOffsetOnNormalDirection(
         currentPosition.xyz, 
         nextPosition.xyz, 
-        normal.x
+        normal.x * widthFactor
     );
 
     gl_Position = (float(!isInvalid) * newPos) + (float(isInvalid) * vec4(0.0, 0.0, 0.0, -1.0));
 
     alpha = segmentStep / numLayers;
-    speed = restoreFloatAndBit(currentPosition.w, 31u).y;
+    
 }
