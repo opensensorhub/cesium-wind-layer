@@ -420,21 +420,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </CompactFormItem>
 
               <CompactFormItem
-                name="showHeatmap"
-                label={renderLabel(
-                  'Show Heatmap',
-                  'Toggles underlying heatmap'
-                )}
-                valuePropName="checked"
-              >
-                <Switch
-                  size="small"
-                  checkedChildren="Heatmap"
-                  unCheckedChildren="Global"
-                />
-              </CompactFormItem>
-
-              <CompactFormItem
                 name="dynamic"
                 label={renderLabel(
                   'Dynamic Animation',

@@ -164,7 +164,6 @@ export function Earth() {
         }
 
         const layer = new WindLayer(viewerRef.current, windData, initialOptions);
-        
         // Add event listeners
         layer.addEventListener('dataChange', (data) => {
           console.log('Wind data updated:', data);
