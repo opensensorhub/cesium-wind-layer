@@ -34,8 +34,7 @@ export const DefaultOptions: WindLayerOptions = {
   particleLifeTime: 2000,
 }
 
-const NUMBER_OF_SAMPLES_PER_AXIS = 128
-const DT = (1 / 60) * 1000; // Target fixed simulation step (e.g., 60 Hz)
+const DT = (1 / 60) * 1000;
 
 export class WindLayer {
   private _showParticles: boolean = true;
@@ -173,8 +172,8 @@ export class WindLayer {
   }
 
   private lengthOfLonLat(lat: number) {
-    // unit conversion: meters -> longitude latitude degrees
-    // see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
+    //unit conversion: meters -> longitude latitude degrees
+    //see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
 
     const latRad = CesiumMath.toRadians(lat)
 
