@@ -43,7 +43,7 @@ float rand(vec2 seed, vec2 range) {
 }
 
 vec2 generateRandomParticle(vec2 seed) {
-    return vec2(rand(seed, lonRange), rand(-seed, latRange));
+    return vec2(rand(seed, displayLonRange), rand(-seed, displayLatRange));
 }
 
 vec2 getInterval(vec2 maximum, vec2 minimum, vec2 dimension) {
