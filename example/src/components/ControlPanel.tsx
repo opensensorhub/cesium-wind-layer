@@ -319,7 +319,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 <NumberInput min={-1000} max={10000} step={1} />
               </CompactFormItem>
 
-                <CompactFormItem
+              <CompactFormItem
                 name="numberOfSamples"
                 label={renderLabel(
                   'Sampled Positions',
@@ -328,7 +328,15 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               >
                 <NumberInput min={0} max={128} step={1} />
               </CompactFormItem>
-
+              <CompactFormItem
+                name="particleLifeTime"
+                label={renderLabel(
+                  'Particle Lifetime',
+                  'Number of milliseconds any particle is on screen for'
+                )}
+              >
+                <NumberInput min={0} max={10000} step={500} />
+              </CompactFormItem>
               <CompactFormItem
                 label={renderLabel(
                   'Line Width Range',
