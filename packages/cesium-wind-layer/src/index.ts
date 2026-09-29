@@ -212,7 +212,10 @@ export class WindLayer {
         const u = windData.u.array[i]
         const v = windData.v.array[i]
 
-        const lat = 90 - (h / (windData.height-1) * 180);
+        const normalizedHeight = 1 - (h / (windData.height-1))
+
+        const lat = windData.bounds.south + (normalizedHeight*(windData.bounds.north - windData.bounds.south))
+
         const speedInLonLat = this.convertSpeedUnitToLonLat(lat, u, v);
 
         newU[i] = isNaN(speedInLonLat.u) ? 0.0 : speedInLonLat.u;
