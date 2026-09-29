@@ -4,7 +4,7 @@ precision highp float;
 precision highp sampler3D;
 
 uniform float currentTime;
-uniform sampler2D currentParticlesPosition;
+uniform sampler2D prevParticlesPosition;
 uniform sampler2D prevParticlesGenTime;
 uniform float particleLifeTime;
 uniform float randomCoefficient;
@@ -23,7 +23,7 @@ float rand(vec2 seed, vec2 range) {
 }
 
 void main() {
-    vec4 currentParticlePosition = texture(currentParticlesPosition, v_textureCoordinates).rgba;
+    vec4 currentParticlePosition = texture(prevParticlesPosition, v_textureCoordinates).rgba;
     vec2 prevGenTime = texture(prevParticlesGenTime, v_textureCoordinates).rg;
 
     vec2 seed = currentParticlePosition.xy + v_textureCoordinates;
