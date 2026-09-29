@@ -241,13 +241,10 @@ export class WindParticlesComputing {
           viewport: new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize)
         },
         preExecute: () => {
-
           const command = this.primitives.copyTo3D.commandToExecute
           if (command) {
             command.framebuffer = this.framebufferSlices[this.currentPosition]
           }
-          //increment head of ring buffer
-          this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
         }
       }),
 
@@ -349,5 +346,7 @@ export class WindParticlesComputing {
     this.primitives.updatePosition.execute(this.context, ps)
     this.primitives.copyTo3D.execute(this.context, ps)
     this.swapTextures();
+    //increment head of ring buffer
+    this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
   }
 }
