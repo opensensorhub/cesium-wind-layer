@@ -345,8 +345,10 @@ export class WindParticlesComputing {
     this.primitives.calculateGenTime.execute(this.context, ps)
     this.primitives.updatePosition.execute(this.context, ps)
     this.primitives.copyTo3D.execute(this.context, ps)
-    this.swapTextures();
-    //increment head of ring buffer
-    this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
+    if(this.options.dynamic) {
+      this.swapTextures();
+      //increment head of ring buffer
+      this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;
+    }
   }
 }
