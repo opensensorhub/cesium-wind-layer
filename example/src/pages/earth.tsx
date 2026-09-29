@@ -47,9 +47,9 @@ const dataConfigs = {
         max: 8,
       },
       speedFactor: 0.8,
-      lineWidth: { min: 1, max: 2 },
-      lineLength: { min: 10, max: 100 },
+      lineWidth: { min: 0.1, max: 0.5 },
       particleHeight: 100,
+      numberOfSamples: 12
     },
     file: '/wind.json'
   },
@@ -60,11 +60,11 @@ const dataConfigs = {
         max: 1,
       },
       speedFactor: 8,
-      lineWidth: { min: 1, max: 4 },
-      lineLength: { min: 20, max: 50 },
+      lineWidth: { min: 0.1, max: 0.5 },
       particleHeight: 10,
+      numberOfSamples: 12
     },
-    file: '/ocean.json'
+    file: '/ocean.json',
   }
 };
 
@@ -73,8 +73,9 @@ const defaultOptions: Partial<WindLayerOptions> = {
   particlesTextureSize: 200,
   colors: colorSchemes.find(item => item.value === 'cool')?.colors.reverse(),
   flipY: true,
-  useViewerBounds: true,
   dynamic: true,
+  numberOfSamples: 32,
+  particleLifeTime: 2000
 };
 
 export function Earth() {
@@ -119,7 +120,7 @@ export function Earth() {
       }
     });
 
-    viewerRef.current.scene.globe.depthTestAgainstTerrain = true;
+    //viewerRef.current.scene.globe.depthTestAgainstTerrain = true;
     // Optional: Add exaggeration to make terrain features more visible
     // viewerRef.current.scene.verticalExaggeration = 2;
     // viewerRef.current.sceneModePicker.viewModel.duration = 0;

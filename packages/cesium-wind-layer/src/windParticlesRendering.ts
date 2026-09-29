@@ -232,12 +232,18 @@ createSegmentsGeometry(): Geometry {
     const needUpdateColorTable = options.colors &&
       JSON.stringify(options.colors) !== JSON.stringify(this.options.colors);
 
+    const updatedSamples = options.numberOfSamples && this.options.numberOfSamples !== options.numberOfSamples;
+
     // Update options first
     this.options = deepMerge(options, this.options);
 
     // Then update color table if needed
     if (needUpdateColorTable) {
       this.onColorTableChange();
+    }
+
+    if(updatedSamples) {
+      this.primitives.segments.setGeometry(this.context, this.createSegmentsGeometry())
     }
   }
 

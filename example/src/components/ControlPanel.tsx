@@ -234,6 +234,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     } else {
       windLayer?.updateOptions(changedValues);
     }
+    if(windLayer) {
+      windLayer.showHeatmap = (changedValues as any).showHeatmap
+    }
+    
 
     onOptionsChange?.(changedValues);
   };
@@ -315,6 +319,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 <NumberInput min={-1000} max={10000} step={1} />
               </CompactFormItem>
 
+                <CompactFormItem
+                name="numberOfSamples"
+                label={renderLabel(
+                  'Sampled Positions',
+                  'Number of Positions to sample each frame. Determines length of trail.'
+                )}
+              >
+                <NumberInput min={0} max={128} step={1} />
+              </CompactFormItem>
+
               <CompactFormItem
                 label={renderLabel(
                   'Line Width Range',
@@ -366,56 +380,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </CompactFormItem>
 
               <CompactFormItem
-                label={renderLabel(
-                  'Line Length Range',
-                  'Length range of particle trails based on speed. Lower values for slower particles, higher values for faster ones.'
-                )}
-              >
-                <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1 }}>
-                      <CompactFormItem
-                        name={['lineLength', 'min']}
-                        label={
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Min Length
-                          </Text>
-                        }
-                        style={{ marginBottom: 0 }}
-                      >
-                        <InputNumber
-                          min={1}
-                          max={500}
-                          step={1}
-                          precision={1}
-                          placeholder='Min Length'
-                        />
-                      </CompactFormItem>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <CompactFormItem
-                        name={['lineLength', 'max']}
-                        label={
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Max Length
-                          </Text>
-                        }
-                        style={{ marginBottom: 0 }}
-                      >
-                        <InputNumber
-                          min={1}
-                          max={500}
-                          step={1}
-                          precision={1}
-                          placeholder='Max Length'
-                        />
-                      </CompactFormItem>
-                    </div>
-                  </div>
-                </Space>
-              </CompactFormItem>
-
-              <CompactFormItem
                 name="speedFactor"
                 label={renderLabel(
                   'Speed Factor',
@@ -456,16 +420,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </CompactFormItem>
 
               <CompactFormItem
-                name="useViewerBounds"
+                name="showHeatmap"
                 label={renderLabel(
-                  'Use Viewer Bounds',
-                  'Generate particles within the current view bounds instead of the entire wind field.'
+                  'Show Heatmap',
+                  'Toggles underlying heatmap'
                 )}
                 valuePropName="checked"
               >
                 <Switch
                   size="small"
-                  checkedChildren="View Bounds"
+                  checkedChildren="Heatmap"
                   unCheckedChildren="Global"
                 />
               </CompactFormItem>

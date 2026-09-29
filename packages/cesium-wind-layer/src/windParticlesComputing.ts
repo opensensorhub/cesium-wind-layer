@@ -285,9 +285,15 @@ export class WindParticlesComputing {
 
   updateOptions(options: Partial<WindLayerOptions>) {
     const needUpdateWindTextures = options.flipY !== undefined && options.flipY !== this.options.flipY;
+    const updatedSamples = options.numberOfSamples && this.options.numberOfSamples !== options.numberOfSamples;
     this.options = deepMerge(options, this.options);
     if (needUpdateWindTextures) {
       this.reCreateWindTextures();
+    }
+    
+    if(updatedSamples) {
+      this.destroyParticlesTextures()
+      this.createParticlesTextures()
     }
   }
 
