@@ -117,7 +117,5 @@ void main() {
     vec2 randomParticle = generateRandomParticle(seed);
     fragColor = float(isExpired) * vec4(randomParticle, 0.0, 1.0); // 1.0 means this is a random particle
 
-    //wrap arround dateline
-    nextParticle.x = mod(nextParticle.x + 180.0, 360.0) - 180.0;
     fragColor += float(!isExpired) * vec4(nextParticle, calculateWindNorm(speedOrigin).y, 0.0);
 }
