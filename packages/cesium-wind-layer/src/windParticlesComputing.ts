@@ -185,10 +185,8 @@ export class WindParticlesComputing {
           minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
           maximum: () => new Cartesian2(this.windData.bounds.east, this.windData.bounds.north),
           prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
-          lonRange: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.east),
-          latRange: () => new Cartesian2(this.windData.bounds.south, this.windData.bounds.north),
-          displayLonRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.west : this.viewerParameters.dataBounds.west), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.east : this.viewerParameters.dataBounds.east)),
-          displayLatRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.viewerParameters.dataBounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.viewerParameters.dataBounds.north)),
+          lonRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.west : this.viewerParameters.dataBounds.west), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.east : this.viewerParameters.dataBounds.east)),
+          latRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.viewerParameters.dataBounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.viewerParameters.dataBounds.north)),
           randomCoefficient: () => Math.random(),
           particlesGenTime: () => this.particlesTextures.currentParticleTimes,
           currentTime: () => performance.now(),
@@ -197,12 +195,6 @@ export class WindParticlesComputing {
         isDynamic: () => this.options.dynamic,
         outputTexture: this.particlesTextures.currentParticlePositions,
         preExecute: () => {
-
-          //swap textures
-          const tmp = this.particlesTextures.prevParticlePositions
-          this.particlesTextures.prevParticlePositions = this.particlesTextures.currentParticlePositions
-          this.particlesTextures.currentParticlePositions = tmp
-
           const command = this.primitives.updatePosition.commandToExecute
           if (command) {
             command.outputTexture = this.particlesTextures.currentParticlePositions
@@ -248,7 +240,7 @@ export class WindParticlesComputing {
       calculateGenTime: new CustomPrimitive({
         commandType: 'Compute',
         uniformMap: {
-          currentParticlesPosition: () => this.particlesTextures.currentParticlePositions,
+          prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
           prevParticlesGenTime: () => this.particlesTextures.prevParticleTimes,
           currentTime: () => performance.now(),
           particleLifeTime: () => this.options.particleLifeTime,
@@ -258,12 +250,6 @@ export class WindParticlesComputing {
         outputTexture: this.particlesTextures.currentParticleTimes,
         isDynamic: () => this.options.dynamic,
         preExecute: () => {
-
-          //swap textures
-          const tmp = this.particlesTextures.prevParticleTimes
-          this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
-          this.particlesTextures.currentParticleTimes = tmp
-
           if (this.primitives.calculateGenTime.commandToExecute) {
             this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.currentParticleTimes;
           }
@@ -295,6 +281,16 @@ export class WindParticlesComputing {
       this.destroyParticlesTextures()
       this.createParticlesTextures()
     }
+  }
+
+  swapTextures() {
+    let tmp = this.particlesTextures.prevParticleTimes
+    this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
+    this.particlesTextures.currentParticleTimes = tmp
+
+    tmp = this.particlesTextures.prevParticlePositions
+    this.particlesTextures.prevParticlePositions = this.particlesTextures.currentParticlePositions
+    this.particlesTextures.currentParticlePositions = tmp
   }
 
   processWindData(data: {
@@ -336,5 +332,6 @@ export class WindParticlesComputing {
     this.primitives.calculateGenTime.execute(this.context, ps)
     this.primitives.updatePosition.execute(this.context, ps)
     this.primitives.copyTo3D.execute(this.context, ps)
+    this.swapTextures();
   }
 }

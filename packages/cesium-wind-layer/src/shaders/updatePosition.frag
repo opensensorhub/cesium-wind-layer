@@ -9,9 +9,6 @@ uniform sampler2D particlesGenTime;
 uniform vec2 lonRange;
 uniform vec2 latRange;
 
-uniform vec2 displayLonRange;
-uniform vec2 displayLatRange;
-
 uniform float randomCoefficient;
 uniform float currentTime;
 
@@ -43,7 +40,7 @@ float rand(vec2 seed, vec2 range) {
 }
 
 vec2 generateRandomParticle(vec2 seed) {
-    return vec2(rand(seed, displayLonRange), rand(-seed, displayLatRange));
+    return vec2(rand(seed, lonRange), rand(-seed, latRange));
 }
 
 vec2 getInterval(vec2 maximum, vec2 minimum, vec2 dimension) {
@@ -97,7 +94,7 @@ vec2 calculateWindNorm(vec2 speed) {
 }
 
 bool particleOutbound(vec2 particle) {
-    return particle.y < displayLatRange.x || particle.y > displayLatRange.y || ((displayLonRange.x > -180.0 || displayLonRange.y < 180.0) && (particle.x < displayLonRange.x || particle.x > displayLonRange.y));
+    return particle.y < latRange.x || particle.y > latRange.y || ((lonRange.x > -180.0 || lonRange.y < 180.0) && (particle.x < lonRange.x || particle.x > lonRange.y));
 }
 
 void main() {
