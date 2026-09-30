@@ -144,7 +144,7 @@ export class WindLayer {
   }
 
   private setupEventListeners(): void {
-    this.scene.preRender.addEventListener(this.computeLoop.bind(this));
+    this.scene.preRender.addEventListener(this.computeLoop, this);
   }
 
   //use fixed loop for compute shaders
@@ -167,7 +167,7 @@ export class WindLayer {
   }
 
   private removeEventListeners(): void {
-    this.scene.preRender.removeEventListener(this.computeLoop.bind(this))
+    this.scene.preRender.removeEventListener(this.computeLoop, this)
   }
 
   private lengthOfLonLat(lat: number) {
