@@ -58,9 +58,10 @@ void main() {
     int iCurrentLayer = int(currentLayer);
     int segmentStep = int(normal.y);
     int currentLayerIndex = (iCurrentLayer + segmentStep) % iNumLayers;
+    bool isHead = segmentStep == iNumLayers - 1;
     //if current vertex maps to head of trail, use previous pos
     //this avoids vector pointing to tail
-    int nextLayerIndex = (currentLayerIndex + (segmentStep == iNumLayers - 1 ? iNumLayers - 1 : 1)) % iNumLayers;
+    int nextLayerIndex = (currentLayerIndex + (isHead ? iNumLayers - 1 : 1)) % iNumLayers;
 
     vec4 nextPosition = texelFetch(particlesPosition, ivec3(particleIndex, nextLayerIndex), 0).rgba;
     vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
@@ -77,7 +78,7 @@ void main() {
         gl_Position = calculateOffsetOnNormalDirection(
             currentPosition.xyz, 
             nextPosition.xyz, 
-            normal.x * widthFactor * (segmentStep == iNumLayers - 1 ? -1.0 : 1.0) //vector direction reversed for head case
+            normal.x * widthFactor * (isHead ? -1.0 : 1.0) //vector direction reversed for head case
         );
     }
 
