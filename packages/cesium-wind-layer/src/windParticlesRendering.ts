@@ -144,7 +144,7 @@ createSegmentsGeometry(): Geometry {
       primitiveType: PrimitiveType.TRIANGLE_STRIP,
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
-        currentLayer: () => this.computing.currentPosition - 1,
+        currentLayer: () => (this.computing.currentPosition + this.options.numberOfSamples - 1) % this.options.numberOfSamples,
         opacity: () => this.options.particlesOpacity,
         numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
