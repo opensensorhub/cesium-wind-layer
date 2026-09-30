@@ -53,21 +53,21 @@ vec2 restoreFloatAndBit(float modifiedNumber, uint bitIndex) {
 }
 
 void main() {
-    vec2 particleIndex = vec2(st.x, 1.0 - st.y);
-    float segmentStep = normal.y;
-    float currentLayerIndex = mod(currentLayer + segmentStep + 1.0, numLayers);
-    float nextLayerIndex = mod(currentLayer + segmentStep + 2.0, numLayers);
-    float currentZ = (currentLayerIndex + 0.5) / numLayers;
-    float nextZ = (nextLayerIndex + 0.5) / numLayers;
+    ivec2 particleIndex = ivec2(int(st.x), textureSize(particlesPosition, 0).x - int(st.y));
+    int iNumLayers = int(numLayers);
+    int iCurrentLayer = int(currentLayer);
+    int segmentStep = int(normal.y);
+    int currentLayerIndex = (iCurrentLayer + segmentStep + 1) % iNumLayers;
+    int nextLayerIndex = (iCurrentLayer + segmentStep + 2) % iNumLayers;
 
-    vec4 nextPosition = texture(particlesPosition, vec3(particleIndex, nextZ)).rgba;
+    vec4 nextPosition = texelFetch(particlesPosition, ivec3(particleIndex, nextLayerIndex), 0).rgba;
 
     float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x;
 
-    if((isAnyRandomPointUsed > 0.0) || (segmentStep == numLayers - 1.0)) {
+    if(isAnyRandomPointUsed > 0.0) {
         gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
     } else {
-        vec4 currentPosition = texture(particlesPosition, vec3(particleIndex, currentZ)).rgba;
+        vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
 
         speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 
@@ -80,5 +80,5 @@ void main() {
         );
     }
 
-    alpha = segmentStep / numLayers;
+    alpha = normal.y / numLayers;
 }

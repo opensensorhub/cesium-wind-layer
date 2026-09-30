@@ -67,12 +67,10 @@ createSegmentsGeometry(): Geometry {
 
   for (let s = 0; s < texureSize; s++) {
     for (let t = 0; t < texureSize; t++) {
-      const u = s / texureSize;
-      const v = t / texureSize;
       for (let j = 0; j < this.options.numberOfSamples; j++) {
         st.push(
-          u, v,
-          u, v
+          s, t,
+          s, t
         );
 
         //(normal offset, ring buffer index)
@@ -183,8 +181,7 @@ createSegmentsGeometry(): Geometry {
       geometry: this.createHeatmapGeometry(),
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
-        U: () => this.computing.windTextures.u_ms,
-        V: () =>  this.computing.windTextures.v_ms,
+        UV: () => this.computing.windTextures.UV,
         domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
         colorTable: () =>  this.colorTable,
         opacity: () => this.options.heatmapOpacity

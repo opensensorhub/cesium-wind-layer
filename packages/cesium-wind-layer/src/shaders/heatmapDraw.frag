@@ -6,8 +6,7 @@ in vec2 texCoord;
 uniform sampler2D colorTable;
 uniform vec2 domain;
 uniform float opacity;
-uniform sampler2D U;
-uniform sampler2D V;
+uniform sampler2D UV;
 
 out vec4 fragColor;
 
@@ -54,9 +53,7 @@ vec4 textureBicubic(sampler2D sampler, vec2 texCoords) {
 }
 
 void main() {
-    float u = textureBicubic(U, texCoord).r;
-    float v = textureBicubic(V, texCoord).r;
-    vec2 uv = vec2(u, v);
+    vec2 uv = textureBicubic(UV, texCoord).ba;
 
     float speed = length(uv);
     float speedNormalized = (speed - domain.x)/(domain.y - domain.x);
