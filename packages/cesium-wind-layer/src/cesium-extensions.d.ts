@@ -52,12 +52,14 @@ declare module 'cesium' {
       shaderProgram: ShaderProgram;
       uniformMap: { [key: string]: () => any };
       pass: Pass;
+      instanceCount?: number;
     });
     uniformMap: { [key: string]: () => any };
     shaderProgram?: ShaderProgram;
     vertexArray?: VertexArray;
     framebuffer?: Framebuffer;
     outputTexture?: Texture;
+    instanceCount?: number;
     execute(context: any, passState: PassState): void;
   }
 

@@ -2,8 +2,7 @@
 precision highp float;
 precision highp sampler3D;
 
-in vec2 st;
-in vec2 normal;
+in float normal;
 
 #ifndef czm_pi
 #define czm_pi 3.141592653589793
@@ -53,10 +52,11 @@ vec2 restoreFloatAndBit(float modifiedNumber, uint bitIndex) {
 }
 
 void main() {
-    ivec2 particleIndex = ivec2(int(st.x), textureSize(particlesPosition, 0).x - int(st.y));
+    int particleTextureSize = textureSize(particlesPosition, 0).x;
+    int segmentStep = gl_VertexID / 2;
+    ivec2 particleIndex = ivec2(gl_InstanceID % particleTextureSize, gl_InstanceID / particleTextureSize);
     int iNumLayers = int(numLayers);
     int iCurrentLayer = int(currentLayer);
-    int segmentStep = int(normal.y);
     int currentLayerIndex = (iCurrentLayer + segmentStep) % iNumLayers;
     bool isHead = segmentStep == iNumLayers - 1;
     //if current vertex maps to head of trail, use previous pos
@@ -78,9 +78,9 @@ void main() {
         gl_Position = calculateOffsetOnNormalDirection(
             currentPosition.xyz, 
             nextPosition.xyz, 
-            normal.x * widthFactor * (isHead ? -1.0 : 1.0) //vector direction reversed for head case
+            normal * widthFactor * (isHead ? -1.0 : 1.0) //vector direction reversed for head case
         );
     }
 
-    alpha = normal.y / numLayers;
+    alpha = float(segmentStep) / numLayers;
 }

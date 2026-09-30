@@ -1,4 +1,4 @@
-import { Math as CesiumMath, Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction, IndexDatatype } from 'cesium';
+import { Math as CesiumMath, Geometry, GeometryAttribute, ComponentDatatype, PrimitiveType, GeometryAttributes, Color, Texture, Sampler, TextureMinificationFilter, TextureMagnificationFilter, PixelFormat, PixelDatatype, Framebuffer, Appearance, SceneMode, TextureWrap, VertexArray, BufferUsage, Cartesian2, Primitive, RectangleGeometry, VertexFormat, DepthFunction, IndexDatatype, DrawCommand } from 'cesium';
 import { WindLayerOptions } from './types';
 import { WindParticlesComputing } from './windParticlesComputing';
 import CustomPrimitive from './customPrimitive';
@@ -57,52 +57,32 @@ export class WindParticlesRendering {
   }
 
 createSegmentsGeometry(): Geometry {
-  const texureSize = this.options.particlesTextureSize;
-
-  let st: number[] = [];
   let normal: number[] = [];
   let vertexIndexes: number[] = [];
   let vertexCount = 0;
-  let particleCount = 0;
 
-  for (let s = 0; s < texureSize; s++) {
-    for (let t = 0; t < texureSize; t++) {
-      //tail -> head of trail
-      for (let j = 0; j < this.options.numberOfSamples; j++) {
-        st.push(
-          s, t,
-          s, t
-        );
+  for (let j = 0; j < this.options.numberOfSamples; j++) {
 
-        //(normal offset, ring buffer index)
-        normal.push(
-          -1, j,
-          1, j
-        );
+    //(normal offset, ring buffer index)
+    normal.push(
+      -1,
+      1
+    );
 
-        vertexIndexes.push(
-          vertexCount + 0, vertexCount + 1
-        );
+    vertexIndexes.push(
+      vertexCount + 0, vertexCount + 1
+    );
 
-        vertexCount += 2;
-      }
-      //degenerate vertex
-      //this avoids connecting 2 different segments together
-      vertexIndexes.push(0xFFFFFFFF);
-      particleCount++;
-    }
+    vertexCount += 2;
   }
+
+  vertexIndexes.push(0xFFFFFFFF);
 
   return new Geometry({
     attributes: new (GeometryAttributes as any)({
-      st: new GeometryAttribute({
-        componentDatatype: ComponentDatatype.FLOAT,
-        componentsPerAttribute: 2,
-        values: new Float32Array(st)
-      }),
       normal: new GeometryAttribute({
         componentDatatype: ComponentDatatype.FLOAT,
-        componentsPerAttribute: 2,
+        componentsPerAttribute: 1,
         values: new Float32Array(normal)
       }),
     }),
@@ -138,11 +118,11 @@ createSegmentsGeometry(): Geometry {
     const segments = new CustomPrimitive({
       commandType: 'Draw',
       attributeLocations: {
-        st: 0,
-        normal: 1
+        normal: 0
       },
       geometry: this.createSegmentsGeometry(),
       primitiveType: PrimitiveType.TRIANGLE_STRIP,
+      instanceCount: this.options.particlesTextureSize ** 2,
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
         currentLayer: () => this.computing.currentPosition,
@@ -169,6 +149,12 @@ createSegmentsGeometry(): Geometry {
           blendFuncDestination: WebGLRenderingContext.ONE_MINUS_SRC_ALPHA
         }
       }),
+      preExecute: () => {
+        const command = this.primitives.segments.commandToExecute as DrawCommand;
+        if(command && command.instanceCount !== this.options.particlesTextureSize ** 2) {
+          command.instanceCount = this.options.particlesTextureSize ** 2;
+        }
+      }
     });
 
 

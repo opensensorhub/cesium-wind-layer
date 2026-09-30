@@ -32,6 +32,7 @@ interface CustomPrimitiveOptions {
   autoClear?: boolean;
   preExecute?: () => void;
   name?: string;
+  instanceCount?: number;
 }
 
 export default class CustomPrimitive {
@@ -52,6 +53,7 @@ export default class CustomPrimitive {
   clearCommand?: ClearCommand;
   isDynamic: () => boolean;
   name: string;
+  instanceCount?: number
 
   constructor(options: CustomPrimitiveOptions) {
     this.commandType = options.commandType;
@@ -67,6 +69,7 @@ export default class CustomPrimitive {
     this.autoClear = options.autoClear ?? false;
     this.preExecute = options.preExecute;
     this.name = options.name ?? 'Default'
+    this.instanceCount = options.instanceCount
 
     this.show = true;
     this.commandToExecute = undefined;
@@ -110,6 +113,7 @@ export default class CustomPrimitive {
         framebuffer: this.framebuffer,
         uniformMap: this.uniformMap,
         pass: Pass.OPAQUE,
+        instanceCount: this.instanceCount
       });
     } else if (this.commandType === 'Compute') {
       return new ComputeCommand({
