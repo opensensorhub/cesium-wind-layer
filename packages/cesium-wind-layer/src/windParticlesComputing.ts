@@ -1,4 +1,4 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry, PassState, ComputeEngine } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry, PassState, ComputeEngine, RenderState } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
@@ -174,6 +174,19 @@ export class WindParticlesComputing {
   destroyFramebufferSlices() {
     this.framebufferSlices.forEach(slice => slice.destroy())
     this.framebufferSlices = []
+  }
+
+  onParticlesTextureSizeChange() {
+    this.destroyParticlesTextures()
+    this.destroyFramebufferSlices()
+    this.createParticlesTextures()
+    this.createFramebufferSlices()
+
+    const copyTo3D = this.primitives.copyTo3D
+    copyTo3D.rawRenderState.viewport = new BoundingRectangle(0, 0, this.options.particlesTextureSize, this.options.particlesTextureSize)
+    if (copyTo3D.commandToExecute) {
+      (copyTo3D.commandToExecute as any).renderState = RenderState.fromCache(copyTo3D.rawRenderState)
+    }
   }
 
   destroyParticlesTextures() {

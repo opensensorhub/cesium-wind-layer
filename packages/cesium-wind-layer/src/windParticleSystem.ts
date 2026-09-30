@@ -47,8 +47,7 @@ export class WindParticleSystem {
     this.rendering.updateOptions(options);
     this.computing.updateOptions(options);
     if (maxParticlesChanged) {
-      this.computing.destroyParticlesTextures();
-      this.computing.createParticlesTextures();
+      this.computing.onParticlesTextureSizeChange();
       this.rendering.onParticlesTextureSizeChange();
     }
   }
