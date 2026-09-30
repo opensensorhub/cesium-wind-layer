@@ -67,6 +67,7 @@ createSegmentsGeometry(): Geometry {
 
   for (let s = 0; s < texureSize; s++) {
     for (let t = 0; t < texureSize; t++) {
+      //tail -> head of trail
       for (let j = 0; j < this.options.numberOfSamples; j++) {
         st.push(
           s, t,
@@ -144,7 +145,7 @@ createSegmentsGeometry(): Geometry {
       primitiveType: PrimitiveType.TRIANGLE_STRIP,
       uniformMap: {
         particlesPosition: () => this.computing.particlesTextures.historicalPositions,
-        currentLayer: () => (this.computing.currentPosition + this.options.numberOfSamples - 1) % this.options.numberOfSamples,
+        currentLayer: () => this.computing.currentPosition,
         opacity: () => this.options.particlesOpacity,
         numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
