@@ -1,4 +1,4 @@
-import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry, PassState } from 'cesium';
+import { PixelDatatype, PixelFormat, Sampler, Texture, TextureMagnificationFilter, TextureMinificationFilter, Cartesian2, FrameRateMonitor, Math as CesiumMath, Framebuffer, Texture3D, BoundingRectangle, PrimitiveType, GeometryAttributes, GeometryAttribute, ComponentDatatype, Geometry, PassState, ComputeEngine } from 'cesium';
 import { WindLayerOptions, WindData } from './types';
 import { ShaderManager } from './shaderManager';
 import CustomPrimitive from './customPrimitive'
@@ -9,10 +9,7 @@ export class WindParticlesComputing {
   options: WindLayerOptions;
   viewerParameters: any;
   windTextures!: {
-    U: Texture;
-    V: Texture;
-    u_ms: Texture;
-    v_ms: Texture;
+    UV: Texture;
   };
   particlesTextures!: {
     prevParticleTimes: Texture;
@@ -32,12 +29,14 @@ export class WindParticlesComputing {
   frameRateAdjustment: number = 1;
   currentPosition: number = 0
   framebufferSlices: FramebufferSlice[]
+  computeEngine: ComputeEngine
 
   constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
     this.context = context;
     this.options = options;
     this.viewerParameters = viewerParameters;
     this.windData = windData;
+    this.computeEngine = new ComputeEngine(context);
 
     this.frameRateMonitor = new FrameRateMonitor({
       scene: scene,
@@ -49,6 +48,7 @@ export class WindParticlesComputing {
     this.createParticlesTextures();
     this.createComputingPrimitives();
     this.createFramebufferSlices();
+
   }
 
   createWindTextures() {
@@ -56,7 +56,7 @@ export class WindParticlesComputing {
       context: this.context,
       width: this.windData.width,
       height: this.windData.height,
-      pixelFormat: PixelFormat.RED,
+      pixelFormat: PixelFormat.RGBA,
       pixelDatatype: PixelDatatype.FLOAT,
       flipY: this.options.flipY ?? false,
       sampler: new Sampler({
@@ -65,29 +65,20 @@ export class WindParticlesComputing {
       })
     }
 
+    const packedUV = new Float32Array(options.width * options.height * 4);
+
+    for (let i = 0, j = 0; i < options.width * options.height; i++, j += 4) {
+      packedUV[j] = this.windData.u_ll.array[i];
+      packedUV[j + 1] = this.windData.v_ll.array[i];
+      packedUV[j + 2] = this.windData.u.array[i];
+      packedUV[j + 3] = this.windData.v.array[i];
+    }
+
     this.windTextures = {
-      U: new Texture({
+      UV: new Texture({
         ...options,
         source: {
-          arrayBufferView: new Float32Array(this.windData.u_ll.array)
-        }
-      }),
-      V: new Texture({
-        ...options,
-        source: {
-          arrayBufferView: new Float32Array(this.windData.v_ll.array)
-        }
-      }),
-      u_ms: new Texture({
-        ...options,
-        source: {
-          arrayBufferView: new Float32Array(this.windData.u.array)
-        }
-      }),
-      v_ms: new Texture({
-        ...options,
-        source: {
-          arrayBufferView: new Float32Array(this.windData.v.array)
+          arrayBufferView: packedUV
         }
       }),
     };
@@ -195,10 +186,7 @@ export class WindParticlesComputing {
       updatePosition: new CustomPrimitive({
         commandType: 'Compute',
         uniformMap: {
-          U: () => this.windTextures.U,
-          V: () => this.windTextures.V,
-          u_ms: () => this.windTextures.u_ms,
-          v_ms: () => this.windTextures.v_ms,
+          UV: () => this.windTextures.UV,
           speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
           speedScaleFactor: () => 1000 * this.options.speedFactor,
           dimension: () => new Cartesian2(this.windData.width, this.windData.height),
@@ -270,8 +258,7 @@ export class WindParticlesComputing {
   }
 
   private reCreateWindTextures() {
-    this.windTextures.U.destroy();
-    this.windTextures.V.destroy();
+    this.windTextures.UV.destroy();
     this.createWindTextures();
   }
 
@@ -342,9 +329,9 @@ export class WindParticlesComputing {
 
   execute() {
     const ps = new PassState(this.context)
-    this.primitives.calculateGenTime.execute(this.context, ps)
-    this.primitives.updatePosition.execute(this.context, ps)
-    this.primitives.copyTo3D.execute(this.context, ps)
+    this.primitives.calculateGenTime.execute(this.context, ps, this.computeEngine)
+    this.primitives.updatePosition.execute(this.context, ps, this.computeEngine)
+    this.primitives.copyTo3D.execute(this.context, ps, this.computeEngine)
     if(this.options.dynamic) {
       this.swapTextures();
       //increment head of ring buffer

@@ -164,7 +164,7 @@ export default class CustomPrimitive {
     }
   }
 
-  execute(context: any, passState: any) {
+  execute(context: any, passState: any, computeEngine: ComputeEngine) {
 
     if (!this.show || !this.isDynamic()) {
       return;
@@ -180,7 +180,7 @@ export default class CustomPrimitive {
 
     if (defined(this.commandToExecute)) {
       if(this.commandType == "Compute") {
-        (this.commandToExecute as ComputeCommand).execute(new ComputeEngine(context))
+        (this.commandToExecute as ComputeCommand).execute(computeEngine)
       } else {
         (this.commandToExecute as DrawCommand).execute(context, passState)
       }

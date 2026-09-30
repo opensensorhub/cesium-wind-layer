@@ -13,10 +13,7 @@ uniform float randomCoefficient;
 uniform float currentTime;
 
 // the size of UV textures: width = lon, height = lat
-uniform sampler2D U; // eastward wind deg/s
-uniform sampler2D V; // northward wind deg/s
-uniform sampler2D u_ms; // eastward wind m/s
-uniform sampler2D v_ms; // northward wind m/s
+uniform sampler2D UV;
 
 uniform vec2 speedRange; // (min, max)
 uniform vec2 dimension; // (lon, lat)
@@ -64,11 +61,7 @@ vec2 mapPositionToNormalizedIndex2D(vec2 lonLat) {
 
 vec4 getWindComponents(vec2 lonLat) {
     vec2 normalizedIndex2D = mapPositionToNormalizedIndex2D(lonLat);
-    float u = texture(U, normalizedIndex2D).r;
-    float v = texture(V, normalizedIndex2D).r;
-    float u_raw = texture( u_ms, normalizedIndex2D).r;
-    float v_raw = texture( v_ms, normalizedIndex2D).r;
-    return vec4(u, v, u_raw, v_raw);
+    return texture(UV, normalizedIndex2D).rgba;
 }
 
 vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
