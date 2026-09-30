@@ -57,17 +57,18 @@ void main() {
     int iNumLayers = int(numLayers);
     int iCurrentLayer = int(currentLayer);
     int segmentStep = int(normal.y);
-    int currentLayerIndex = (iCurrentLayer + segmentStep + 1) % iNumLayers;
-    int nextLayerIndex = (iCurrentLayer + segmentStep + 2) % iNumLayers;
+    int currentLayerIndex = (iCurrentLayer + segmentStep) % iNumLayers;
+    //if current vertex maps to head of trail, use previous pos
+    //this avoids vector pointing to tail
+    int nextLayerIndex = (currentLayerIndex + (segmentStep == iNumLayers - 1 ? iNumLayers - 1 : 1)) % iNumLayers;
 
     vec4 nextPosition = texelFetch(particlesPosition, ivec3(particleIndex, nextLayerIndex), 0).rgba;
-
-    float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x;
+    vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
+    float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x + restoreFloatAndBit(currentPosition.w, 31u).x;
 
     if(isAnyRandomPointUsed > 0.0) {
         gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
     } else {
-        vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
 
         speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 
@@ -76,7 +77,7 @@ void main() {
         gl_Position = calculateOffsetOnNormalDirection(
             currentPosition.xyz, 
             nextPosition.xyz, 
-            normal.x * widthFactor
+            normal.x * widthFactor * (segmentStep == iNumLayers - 1 ? -1.0 : 1.0) //vector direction reversed for head case
         );
     }
 
