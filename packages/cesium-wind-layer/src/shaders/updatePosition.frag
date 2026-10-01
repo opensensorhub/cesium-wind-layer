@@ -64,16 +64,12 @@ vec4 getWindComponents(vec2 lonLat) {
     return texture(UV, normalizedIndex2D).rgba;
 }
 
-vec2 calculateSpeedByRungeKutta2(vec2 lonLat) {
+vec2 calculateSpeedByRungeKutta2(vec2 y_n, vec2 f_n) {
     // see https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Second-order_methods_with_two_stages for detail
     float h = 0.5 * speedScaleFactor;
-
-    vec2 y_n = lonLat;
-    vec2 f_n = getWindComponents(lonLat).xy;
     vec2 midpoint = y_n + 0.5 * h * f_n;
-    vec2 speed = h * getWindComponents(midpoint).xy;
 
-    return speed;
+    return h * getWindComponents(midpoint).xy;
 }
 
 vec2 calculateWindNorm(vec2 speed) {
@@ -83,6 +79,7 @@ vec2 calculateWindNorm(vec2 speed) {
     // Clamp speedLength to range
     float clampedSpeed = clamp(speedLength, speedRange.x, speedRange.y);
     float normalizedSpeed = (clampedSpeed - speedRange.x) / (speedRange.y - speedRange.x);
+    
     return vec2(speedLength, normalizedSpeed); //* float(!isSpeedZero);
 }
 
@@ -92,8 +89,10 @@ bool particleOutbound(vec2 particle) {
 
 void main() {
     vec2 lonLat = texture(prevParticlesPosition, v_textureCoordinates).rg;
-    vec2 speedOrigin = getWindComponents(lonLat).zw;
-    vec2 speedInLonLat = calculateSpeedByRungeKutta2(lonLat); //* frameRateAdjustment;
+    vec4 windComponents = getWindComponents(lonLat).xyzw;
+    vec2 speedOriginLL = windComponents.xy;
+    vec2 speedOrigin = windComponents.zw;
+    vec2 speedInLonLat = calculateSpeedByRungeKutta2(lonLat, speedOriginLL); //* frameRateAdjustment;
 
     // 计算下一个位置
     vec2 nextParticle = lonLat + speedInLonLat;
