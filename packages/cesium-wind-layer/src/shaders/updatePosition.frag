@@ -9,7 +9,8 @@ uniform vec2 latRange;
 
 uniform float randomCoefficient;
 uniform float deltaTime;
-uniform float particleLifeTime;
+uniform float minParticleTTL;
+uniform float maxParticleTTL;
 
 // the size of UV textures: width = lon, height = lat
 uniform sampler2D UV;
@@ -44,7 +45,7 @@ vec2 getInterval(vec2 maximum, vec2 minimum, vec2 dimension) {
 }
 
 vec2 mapPositionToNormalizedIndex2D(vec2 lonLat) {
-    // ensure the range of longitude and latitude
+  // ensure the range of longitude and latitude
   lonLat.x = clamp(lonLat.x, minimum.x, maximum.x);
   lonLat.y = clamp(lonLat.y, minimum.y, maximum.y);
 
@@ -96,17 +97,16 @@ void main() {
 
   // 计算下一个位置
   vec2 nextParticle = lonLat + speedInLonLat;
-
+  
   vec2 seed = nextParticle.xy + v_textureCoordinates;
+  vec2 randomParticle = generateRandomParticle(seed);
+  float randTime = rand(randomParticle + v_textureCoordinates, vec2(minParticleTTL, maxParticleTTL));
 
-  float timeOffset = rand(seed, vec2(0.0f, 1000.0f));
-
-  float ttl = prevParticle.a - deltaTime;
+  float ttl = abs(prevParticle.a) - deltaTime;
   bool isExpired = ttl <= 0.0f || particleOutbound(nextParticle);
 
-  vec2 randomParticle = generateRandomParticle(seed);
   //vec2 speedAtRandomParticle = getWindComponents(randomParticle).zw;
-  fragColor = float(isExpired) * vec4(randomParticle, 0.0f, particleLifeTime + timeOffset); // 1.0 means this is a random particle
+  fragColor = float(isExpired) * vec4(randomParticle, 0.0f, -randTime);
 
   //wrap arround dateline
   nextParticle.x = mod(nextParticle.x + 180.0f, 360.0f) - 180.0f;

@@ -66,7 +66,7 @@ export interface WindLayerOptions {
   /**
    * 0-1 alpha value for particles
    */
-  particlesOpacity: number;
+  particlesOpacity?: number;
 
   /**
    * Lat lon bounds for displaying data.
@@ -79,9 +79,14 @@ export interface WindLayerOptions {
   numberOfSamples: number;
 
   /**
-   * Expiry time of each particle
+   * Max lifetime of each particle
    */
-  particleLifeTime: number;
+  maxParticleTTL?: number;
+
+  /**
+   * Min lifetime of each particle
+   */
+  minParticleTTL?: number;
 }
 
 export interface WindDataDemention {

@@ -31,7 +31,8 @@ export const DefaultOptions: WindLayerOptions = {
   heatmapOpacity: 1,
   particlesOpacity: 1,
   numberOfSamples: 16,
-  particleLifeTime: 2000,
+  maxParticleTTL: 2000,
+  minParticleTTL: 1000
 }
 
 const DT = (1 / 60) * 1000;

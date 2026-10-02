@@ -207,7 +207,8 @@ export class WindParticlesComputing {
           latRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.viewerParameters.dataBounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.viewerParameters.dataBounds.north)),
           randomCoefficient: () => Math.random(),
           deltaTime: () => this.deltaTime,
-          particleLifeTime: () => this.options.particleLifeTime,
+          maxParticleTTL: () => this.options.maxParticleTTL,
+          minParticleTTL: () => this.options.minParticleTTL
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
         isDynamic: () => this.options.dynamic,
@@ -225,7 +226,6 @@ export class WindParticlesComputing {
         uniformMap: {
           currentParticlePositions: () => this.particlesTextures.currentParticlePositions,
           particleHeight: () => this.options.particleHeight || 0,
-          particleLifeTime: () => this.options.particleLifeTime,
         },
         vertexShaderSource: ShaderManager.getViewportQuadVS(),
         attributeLocations: {
