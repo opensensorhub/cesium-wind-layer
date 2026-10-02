@@ -320,9 +320,8 @@ export class WindParticlesComputing {
   }
 
   execute(deltaTime: number) {
-    const ps = new PassState(this.context)
-    this.primitives.updatePosition.execute(this.context, ps, this.computeEngine)
-    this.primitives.copyTo3D.execute(this.context, ps, this.computeEngine)
+    this.primitives.updatePosition.execute(this.context, this.computeEngine)
+    this.primitives.copyTo3D.execute(this.context, this.computeEngine)
     if(this.options.dynamic) {
       this.deltaTime = deltaTime
       this.swapTextures();
