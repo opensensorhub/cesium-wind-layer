@@ -12,15 +12,12 @@ export class WindParticlesComputing {
     UV: Texture;
   };
   particlesTextures!: {
-    prevParticleTimes: Texture;
-    currentParticleTimes: Texture;
     prevParticlePositions: Texture;
     currentParticlePositions: Texture;
     historicalPositions: Texture3D;
   };
   primitives!: {
     updatePosition: CustomPrimitive;
-    calculateGenTime: CustomPrimitive;
     copyTo3D: CustomPrimitive;
   };
   windData: Required<WindData>;
@@ -30,6 +27,7 @@ export class WindParticlesComputing {
   currentPosition: number = 0
   framebufferSlices: FramebufferSlice[]
   computeEngine: ComputeEngine
+  deltaTime: number
 
   constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
     this.context = context;
@@ -37,6 +35,7 @@ export class WindParticlesComputing {
     this.viewerParameters = viewerParameters;
     this.windData = windData;
     this.computeEngine = new ComputeEngine(context);
+    this.deltaTime = 0;
 
     this.frameRateMonitor = new FrameRateMonitor({
       scene: scene,
@@ -163,8 +162,6 @@ export class WindParticlesComputing {
     }
 
     this.particlesTextures = {
-      prevParticleTimes: new Texture(options),
-      currentParticleTimes: new Texture(options),
       prevParticlePositions: new Texture(options),
       currentParticlePositions: new Texture(options),
       historicalPositions: new Texture3D(options3d),
@@ -209,8 +206,8 @@ export class WindParticlesComputing {
           lonRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.west : this.viewerParameters.dataBounds.west), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.east : this.viewerParameters.dataBounds.east)),
           latRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.viewerParameters.dataBounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.viewerParameters.dataBounds.north)),
           randomCoefficient: () => Math.random(),
-          particlesGenTime: () => this.particlesTextures.currentParticleTimes,
-          currentTime: () => performance.now(),
+          deltaTime: () => this.deltaTime,
+          particleLifeTime: () => this.options.particleLifeTime,
         },
         fragmentShaderSource: ShaderManager.getUpdatePositionShader(),
         isDynamic: () => this.options.dynamic,
@@ -228,6 +225,7 @@ export class WindParticlesComputing {
         uniformMap: {
           currentParticlePositions: () => this.particlesTextures.currentParticlePositions,
           particleHeight: () => this.options.particleHeight || 0,
+          particleLifeTime: () => this.options.particleLifeTime,
         },
         vertexShaderSource: ShaderManager.getViewportQuadVS(),
         attributeLocations: {
@@ -245,25 +243,6 @@ export class WindParticlesComputing {
           const command = this.primitives.copyTo3D.commandToExecute
           if (command) {
             command.framebuffer = this.framebufferSlices[this.currentPosition]
-          }
-        }
-      }),
-
-      calculateGenTime: new CustomPrimitive({
-        commandType: 'Compute',
-        uniformMap: {
-          prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
-          prevParticlesGenTime: () => this.particlesTextures.prevParticleTimes,
-          currentTime: () => performance.now(),
-          particleLifeTime: () => this.options.particleLifeTime,
-          randomCoefficient: () => Math.random()
-        },
-        fragmentShaderSource: ShaderManager.getCalculateGenTimeShader(),
-        outputTexture: this.particlesTextures.currentParticleTimes,
-        isDynamic: () => this.options.dynamic,
-        preExecute: () => {
-          if (this.primitives.calculateGenTime.commandToExecute) {
-            this.primitives.calculateGenTime.commandToExecute.outputTexture = this.particlesTextures.currentParticleTimes;
           }
         }
       }),
@@ -297,11 +276,7 @@ export class WindParticlesComputing {
   }
 
   swapTextures() {
-    let tmp = this.particlesTextures.prevParticleTimes
-    this.particlesTextures.prevParticleTimes = this.particlesTextures.currentParticleTimes
-    this.particlesTextures.currentParticleTimes = tmp
-
-    tmp = this.particlesTextures.prevParticlePositions
+    const tmp = this.particlesTextures.prevParticlePositions
     this.particlesTextures.prevParticlePositions = this.particlesTextures.currentParticlePositions
     this.particlesTextures.currentParticlePositions = tmp
   }
@@ -340,12 +315,12 @@ export class WindParticlesComputing {
     this.frameRateMonitor.destroy();
   }
 
-  execute() {
+  execute(deltaTime: number) {
     const ps = new PassState(this.context)
-    this.primitives.calculateGenTime.execute(this.context, ps, this.computeEngine)
     this.primitives.updatePosition.execute(this.context, ps, this.computeEngine)
     this.primitives.copyTo3D.execute(this.context, ps, this.computeEngine)
     if(this.options.dynamic) {
+      this.deltaTime = deltaTime
       this.swapTextures();
       //increment head of ring buffer
       this.currentPosition = (this.currentPosition + 1) % this.options.numberOfSamples;

@@ -160,7 +160,7 @@ export class WindLayer {
 
     while (this.accumulator >= DT) {
       if (this.showParticles) {
-        this.particleSystem.computing.execute();
+        this.particleSystem.computing.execute(DT);
       }
       this.accumulator -= DT;
     }

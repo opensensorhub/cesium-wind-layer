@@ -4,6 +4,7 @@ precision highp sampler3D;
 
 uniform sampler2D currentParticlePositions;
 uniform float particleHeight;
+uniform float particleLifeTime;
 
 in vec2 v_textureCoordinates;
 
@@ -52,5 +53,5 @@ void main() {
     float sinLat = sin(lat);
     float cosLat = cos(lat);
 
-    fragColor = vec4(lonLatToECEF(sinLon, cosLon, sinLat, cosLat), setFloatBitToValue(position.z, 31u, position.w));
+    fragColor = vec4(lonLatToECEF(sinLon, cosLon, sinLat, cosLat), setFloatBitToValue(position.z, 31u, float(position.w >= particleLifeTime)));
 }
