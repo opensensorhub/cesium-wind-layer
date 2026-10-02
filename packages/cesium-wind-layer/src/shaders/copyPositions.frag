@@ -34,7 +34,7 @@ vec3 lonLatToECEF(float sinLon, float cosLon, float sinLat, float cosLat) {
 float setFloatBitToValue(float number, uint bitIndex, float bitValue) {
     uint uValue = floatBitsToUint(number);
     uValue &= ~(1u << bitIndex);
-    uint maskBit = uint(clamp(ceil(abs(bitValue)), 0.0, 1.0));
+    uint maskBit = uint(bitValue);
     uValue |= (maskBit << bitIndex);
     
     return uintBitsToFloat(uValue);

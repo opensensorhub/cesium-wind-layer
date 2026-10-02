@@ -13,7 +13,8 @@ uniform sampler3D particlesPosition;
 uniform float currentLayer;
 uniform float numLayers;
 uniform float aspect;
-uniform vec2 lineWidth;
+uniform float minLineWidth;
+uniform float maxLineWidth;
 
 // 添加输出变量传递给片元着色器
 out float speed;
@@ -73,7 +74,7 @@ void main() {
 
         speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 
-        float widthFactor = mix(lineWidth.x, lineWidth.y, speed);
+        float widthFactor = mix(minLineWidth, maxLineWidth, speed);
 
         gl_Position = calculateOffsetOnNormalDirection(
             currentPosition.xyz, 

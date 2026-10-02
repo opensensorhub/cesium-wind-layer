@@ -4,7 +4,8 @@ precision highp float;
 in vec2 texCoord;
 
 uniform sampler2D colorTable;
-uniform vec2 domain;
+uniform float domainMin;
+uniform float domainMax;
 uniform float opacity;
 uniform sampler2D UV;
 
@@ -54,7 +55,7 @@ vec4 textureBicubic(sampler2D sampler, vec2 texCoords) {
 
 void main() {
     vec2 uv = textureBicubic(UV, texCoord).ba;
-
+    vec2 domain = vec2(domainMin, domainMax);
     float speed = length(uv);
     float speedNormalized = (speed - domain.x)/(domain.y - domain.x);
 

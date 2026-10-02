@@ -129,10 +129,8 @@ createSegmentsGeometry(): Geometry {
         numLayers: () => this.options.numberOfSamples,
         colorTable: () => this.colorTable,
         aspect: () => this.context.drawingBufferWidth / this.context.drawingBufferHeight,
-        lineWidth: () => {
-          const width = this.options.lineWidth || DefaultOptions.lineWidth;
-          return new Cartesian2(width.min, width.max);
-        },
+        minLineWidth: () => this.options.lineWidth?.min ?? DefaultOptions.lineWidth.min,
+        maxLineWidth: () => this.options.lineWidth?.max ?? DefaultOptions.lineWidth.max
       },
       vertexShaderSource: ShaderManager.getSegmentDrawVertexShader(),
       fragmentShaderSource: ShaderManager.getSegmentDrawFragmentShader(),
@@ -168,7 +166,8 @@ createSegmentsGeometry(): Geometry {
       primitiveType: PrimitiveType.TRIANGLES,
       uniformMap: {
         UV: () => this.computing.windTextures.UV,
-        domain: () => new Cartesian2(this.options.domain?.min ?? this.computing.windData.speed.min, this.options.domain?.max ?? this.computing.windData.speed.max),
+        domainMin: () => this.options.domain?.min ?? this.computing.windData.speed.min,
+        domainMax: () => this.options.domain?.max ?? this.computing.windData.speed.max,
         colorTable: () =>  this.colorTable,
         opacity: () => this.options.heatmapOpacity
       },
