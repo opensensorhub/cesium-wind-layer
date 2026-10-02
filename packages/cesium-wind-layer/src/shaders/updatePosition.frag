@@ -127,7 +127,7 @@ void main() {
     vec2 seed = nextParticle.xy + v_textureCoordinates;
     vec2 randomParticle = generateRandomParticle(seed, lonRange, latRange);
     float randTime = rand(randomParticle + v_textureCoordinates, vec2(minParticleTTL, maxParticleTTL));
-    fragColor = vec4(randomParticle, 0.0f, -randTime);
+    fragColor = vec4(randomParticle, calculateWindNorm(getWindComponents(randomParticle).zw).y, -randTime);
   } else {
     //wrap arround dateline
     nextParticle.x = mod(nextParticle.x + czm_pi, czm_twoPi) - czm_pi;
