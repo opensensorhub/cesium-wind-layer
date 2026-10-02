@@ -15,6 +15,7 @@ import {
   BufferUsage,
   destroyObject,
   ComputeEngine,
+  PassState,
 } from 'cesium';
 
 interface CustomPrimitiveOptions {
@@ -168,7 +169,7 @@ export default class CustomPrimitive {
     }
   }
 
-  execute(context: any, passState: any, computeEngine: ComputeEngine) {
+  execute(context: any, passState?: PassState, computeEngine?: ComputeEngine) {
 
     if (!this.show || !this.isDynamic()) {
       return;
@@ -184,11 +185,18 @@ export default class CustomPrimitive {
 
     if (defined(this.commandToExecute)) {
       if(this.commandType == "Compute") {
-        (this.commandToExecute as ComputeCommand).execute(computeEngine)
+        if(computeEngine) {
+          (this.commandToExecute as ComputeCommand).execute(computeEngine)
+        } else {
+          console.error('ComputeEngine required')
+        }
       } else {
-        (this.commandToExecute as DrawCommand).execute(context, passState)
+        if(passState) {
+          (this.commandToExecute as DrawCommand).execute(context, passState)
+        } else {
+          console.error('PassState required')
+        }
       }
-      
     }
   }
 
