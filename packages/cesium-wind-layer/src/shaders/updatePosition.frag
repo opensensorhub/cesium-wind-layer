@@ -98,17 +98,15 @@ void main() {
   // 计算下一个位置
   vec2 nextParticle = lonLat + speedInLonLat;
   
-  vec2 seed = nextParticle.xy + v_textureCoordinates;
-  vec2 randomParticle = generateRandomParticle(seed);
-  float randTime = rand(randomParticle + v_textureCoordinates, vec2(minParticleTTL, maxParticleTTL));
-
   float ttl = abs(prevParticle.a) - deltaTime;
-  bool isExpired = ttl <= 0.0f || particleOutbound(nextParticle);
-
-  //vec2 speedAtRandomParticle = getWindComponents(randomParticle).zw;
-  fragColor = float(isExpired) * vec4(randomParticle, 0.0f, -randTime);
-
-  //wrap arround dateline
-  nextParticle.x = mod(nextParticle.x + 180.0f, 360.0f) - 180.0f;
-  fragColor += float(!isExpired) * vec4(nextParticle, calculateWindNorm(speedOrigin).y, ttl);
+  if(ttl <= 0.0f || particleOutbound(nextParticle)) {
+    vec2 seed = nextParticle.xy + v_textureCoordinates;
+    vec2 randomParticle = generateRandomParticle(seed);
+    float randTime = rand(randomParticle + v_textureCoordinates, vec2(minParticleTTL, maxParticleTTL));
+    fragColor = vec4(randomParticle, 0.0f, -randTime);
+  } else {
+    //wrap arround dateline
+    nextParticle.x = mod(nextParticle.x + 180.0f, 360.0f) - 180.0f;
+    fragColor = vec4(nextParticle, calculateWindNorm(speedOrigin).y, ttl);
+  }
 }
