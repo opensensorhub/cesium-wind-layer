@@ -103,12 +103,7 @@ export interface WindData {
   speed?: WindDataDemention;
   width: number;
   height: number;
-  bounds: {
-    west: number;
-    south: number;
-    east: number;
-    north: number;
-  };
+  bounds: Rectangle;
 }
 
 export interface Particle {

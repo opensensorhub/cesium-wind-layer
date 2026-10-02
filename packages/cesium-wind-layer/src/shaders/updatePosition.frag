@@ -3,9 +3,29 @@ precision highp float;
 
 uniform sampler2D prevParticlesPosition;
 
-// range (min, max)
-uniform vec2 lonRange;
-uniform vec2 latRange;
+#ifndef czm_pi
+#define czm_pi 3.141592653589793
+#endif
+
+#ifndef czm_twoPi
+#define czm_twoPi 6.283185307179586
+#endif
+
+//data range
+uniform float minLon;
+uniform float maxLon;
+uniform float minLat;
+uniform float maxLat;
+
+//display range
+uniform float minDisplayLon;
+uniform float maxDisplayLon;
+uniform float minDisplayLat;
+uniform float maxDisplayLat;
+
+//wind data resolution
+uniform float width;
+uniform float height;
 
 uniform float randomCoefficient;
 uniform float deltaTime;
@@ -15,10 +35,8 @@ uniform float maxParticleTTL;
 // the size of UV textures: width = lon, height = lat
 uniform sampler2D UV;
 
-uniform vec2 speedRange; // (min, max)
-uniform vec2 dimension; // (lon, lat)
-uniform vec2 minimum; // minimum of each dimension
-uniform vec2 maximum; // maximum of each dimension
+uniform float speedMin;
+uniform float speedMax;
 
 uniform float speedScaleFactor;
 
@@ -36,7 +54,7 @@ float rand(vec2 seed, vec2 range) {
   return temp * (range.y - range.x) + range.x;
 }
 
-vec2 generateRandomParticle(vec2 seed) {
+vec2 generateRandomParticle(vec2 seed, vec2 lonRange, vec2 latRange) {
   return vec2(rand(seed, lonRange), rand(-seed, latRange));
 }
 
@@ -45,17 +63,21 @@ vec2 getInterval(vec2 maximum, vec2 minimum, vec2 dimension) {
 }
 
 vec2 mapPositionToNormalizedIndex2D(vec2 lonLat) {
+
+  vec2 minimum = vec2(minLon, minLat);
+  vec2 maximum = vec2(maxLon, maxLat);
+
   // ensure the range of longitude and latitude
   lonLat.x = clamp(lonLat.x, minimum.x, maximum.x);
   lonLat.y = clamp(lonLat.y, minimum.y, maximum.y);
 
-  vec2 interval = getInterval(maximum, minimum, dimension);
+  vec2 interval = getInterval(maximum, minimum, vec2(width, height));
 
   vec2 index2D = vec2(0.0f);
   index2D.x = (lonLat.x - minimum.x) / interval.x;
   index2D.y = (lonLat.y - minimum.y) / interval.y;
 
-  vec2 normalizedIndex2D = vec2(index2D.x / dimension.x, index2D.y / dimension.y);
+  vec2 normalizedIndex2D = vec2(index2D.x / width, index2D.y / height);
   return normalizedIndex2D;
 }
 
@@ -74,8 +96,8 @@ vec2 calculateSpeedByRungeKutta2(vec2 y_n, vec2 f_n) {
 
 vec2 calculateWindNorm(vec2 speed) {
   float speedLength = length(speed.xy);
-    //bool isSpeedZero = speedLength == 0.0;
-
+  vec2 speedRange = vec2(speedMin, speedMax);
+  
     // Clamp speedLength to range
   float clampedSpeed = clamp(speedLength, speedRange.x, speedRange.y);
   float normalizedSpeed = (clampedSpeed - speedRange.x) / (speedRange.y - speedRange.x);
@@ -83,8 +105,8 @@ vec2 calculateWindNorm(vec2 speed) {
   return vec2(speedLength, normalizedSpeed); //* float(!isSpeedZero);
 }
 
-bool particleOutbound(vec2 particle) {
-  return particle.y < latRange.x || particle.y > latRange.y || ((lonRange.x > -180.0f || lonRange.y < 180.0f) && (particle.x < lonRange.x || particle.x > lonRange.y));
+bool particleOutbound(vec2 particle, vec2 lonRange, vec2 latRange) {
+  return particle.y < latRange.x || particle.y > latRange.y || ((lonRange.x > -czm_pi || lonRange.y < czm_pi) && (particle.x < lonRange.x || particle.x > lonRange.y));
 }
 
 void main() {
@@ -94,19 +116,21 @@ void main() {
   vec2 speedOriginLL = windComponents.xy;
   vec2 speedOrigin = windComponents.zw;
   vec2 speedInLonLat = calculateSpeedByRungeKutta2(lonLat, speedOriginLL);
+  vec2 lonRange = vec2(minDisplayLon, maxDisplayLon);
+  vec2 latRange = vec2(minDisplayLat, maxDisplayLat);
 
   // 计算下一个位置
   vec2 nextParticle = lonLat + speedInLonLat;
   
   float ttl = abs(prevParticle.a) - deltaTime;
-  if(ttl <= 0.0f || particleOutbound(nextParticle)) {
+  if(ttl <= 0.0f || particleOutbound(nextParticle, lonRange, latRange)) {
     vec2 seed = nextParticle.xy + v_textureCoordinates;
-    vec2 randomParticle = generateRandomParticle(seed);
+    vec2 randomParticle = generateRandomParticle(seed, lonRange, latRange);
     float randTime = rand(randomParticle + v_textureCoordinates, vec2(minParticleTTL, maxParticleTTL));
     fragColor = vec4(randomParticle, 0.0f, -randTime);
   } else {
     //wrap arround dateline
-    nextParticle.x = mod(nextParticle.x + 180.0f, 360.0f) - 180.0f;
+    nextParticle.x = mod(nextParticle.x + czm_pi, czm_twoPi) - czm_pi;
     fragColor = vec4(nextParticle, calculateWindNorm(speedOrigin).y, ttl);
   }
 }

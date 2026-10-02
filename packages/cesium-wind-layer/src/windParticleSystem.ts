@@ -11,12 +11,11 @@ export class WindParticleSystem {
   options: WindLayerOptions;
   viewerParameters: any;
   context: any;
-  constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
+  constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, scene: any) {
     this.context = context;
     this.options = options;
-    this.viewerParameters = viewerParameters;
-    this.computing = new WindParticlesComputing(context, windData, options, viewerParameters, scene);
-    this.rendering = new WindParticlesRendering(context, options, viewerParameters, this.computing);
+    this.computing = new WindParticlesComputing(context, windData, options, scene);
+    this.rendering = new WindParticlesRendering(context, options, this.computing);
   }
 
   getPrimitives(): CustomPrimitive[] {
@@ -50,12 +49,6 @@ export class WindParticleSystem {
       this.computing.onParticlesTextureSizeChange();
       this.rendering.onParticlesTextureSizeChange();
     }
-  }
-
-  applyViewerParameters(viewerParameters: any): void {
-    this.viewerParameters = viewerParameters;
-    this.computing.viewerParameters = viewerParameters;
-    this.rendering.viewerParameters = viewerParameters;
   }
 
   destroy(): void {

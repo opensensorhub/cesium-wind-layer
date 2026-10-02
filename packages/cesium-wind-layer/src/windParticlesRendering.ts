@@ -15,10 +15,9 @@ export class WindParticlesRendering {
   public primitives!: ReturnType<typeof this.createPrimitives>;
   public colorTable: Texture;
 
-  constructor(context: any, options: WindLayerOptions, viewerParameters: any, computing: WindParticlesComputing) {
+  constructor(context: any, options: WindLayerOptions, computing: WindParticlesComputing) {
     this.context = context;
     this.options = options;
-    this.viewerParameters = viewerParameters;
     this.computing = computing;
 
     if (typeof this.options.particlesTextureSize !== 'number' || this.options.particlesTextureSize <= 0) {
@@ -93,7 +92,7 @@ createSegmentsGeometry(): Geometry {
 
   createHeatmapGeometry(): Geometry {
     return RectangleGeometry.createGeometry(new RectangleGeometry({
-      rectangle: this.viewerParameters.dataBounds,
+      rectangle: this.computing.windData.bounds,
       height: 0.0,
       vertexFormat: VertexFormat.POSITION_AND_ST
     }))!;

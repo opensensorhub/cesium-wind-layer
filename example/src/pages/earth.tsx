@@ -75,7 +75,8 @@ const defaultOptions: Partial<WindLayerOptions> = {
   flipY: true,
   dynamic: true,
   numberOfSamples: 32,
-  particleLifeTime: 2000
+  maxParticleTTL: 2000,
+  minParticleTTL: 1000
 };
 
 export function Earth() {
@@ -134,12 +135,7 @@ export function Earth() {
 
         const windData: WindData = {
           ...data,
-          bounds: {
-            west: data.bbox[0],
-            south: data.bbox[1],
-            east: data.bbox[2],
-            north: data.bbox[3],
-          }
+          bounds: Rectangle.fromDegrees(data.bbox[0], data.bbox[1], data.bbox[2], data.bbox[3])
         };
 
         // Apply initial options with wind configuration
@@ -150,12 +146,7 @@ export function Earth() {
         setCurrentOptions(initialOptions as WindLayerOptions);
 
         if (isFirstLoadRef.current && windData.bounds) {
-          const rectangle = Rectangle.fromDegrees(
-            windData.bounds.west,
-            windData.bounds.south,
-            windData.bounds.east,
-            windData.bounds.north
-          );
+          const rectangle = windData.bounds;
           viewerRef.current.camera.flyTo({
             destination: rectangle,
             duration: 0,

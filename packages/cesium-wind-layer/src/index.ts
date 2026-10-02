@@ -93,10 +93,6 @@ export class WindLayer {
   scene: Scene;
   options: WindLayerOptions;
   private particleSystem: WindParticleSystem;
-  private viewerParameters: {
-    dataBounds: Rectangle;
-    sceneMode: SceneMode;
-  };
   private screenSamples: Cartesian2[]
   private _isDestroyed: boolean = false;
   private primitives: CustomPrimitive[] = [];
@@ -127,17 +123,9 @@ export class WindLayer {
     this.windData = this.processWindData(windData);
     this.screenSamples = []
 
-    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
+    this.checkBounds();
 
-
-    this.viewerParameters = {
-      sceneMode: this.scene.mode,
-      dataBounds: dataBounds
-    }
-
-    this.updateViewerParameters();
-
-    this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.viewerParameters, this.scene);
+    this.particleSystem = new WindParticleSystem(this.scene.context, this.windData, this.options, this.scene);
 
     this.add();
 
@@ -175,22 +163,20 @@ export class WindLayer {
     //unit conversion: meters -> longitude latitude degrees
     //see https://en.wikipedia.org/wiki/Geographic_coordinate_system#Length_of_a_degree for detail
 
-    const latRad = CesiumMath.toRadians(lat)
-
     const term1 = 111132.92;
-    const term2 = 559.82 * Math.cos(2.0 * latRad);
-    const term3 = 1.175 * Math.cos(4.0 * latRad);
-    const term4 = 0.0023 * Math.cos(6.0 * latRad);
+    const term2 = 559.82 * Math.cos(2.0 * lat);
+    const term3 = 1.175 * Math.cos(4.0 * lat);
+    const term4 = 0.0023 * Math.cos(6.0 * lat);
     const latLength = term1 - term2 + term3 - term4;
 
-    const term5 = 111412.84 * Math.cos(latRad);
-    const term6 = 93.5 * Math.cos(3.0 * latRad);
-    const term7 = 0.118 * Math.cos(5.0 * latRad);
-    const longLength = term5 - term6 + term7;
+    const term5 = 111412.84 * Math.cos(lat);
+    const term6 = 93.5 * Math.cos(3.0 * lat);
+    const term7 = 0.118 * Math.cos(5.0 * lat);
+    const lonLength = term5 - term6 + term7;
 
     return {
-      x: longLength,
-      y: latLength
+      x: lonLength * CesiumMath.DEGREES_PER_RADIAN,
+      y: latLength * CesiumMath.DEGREES_PER_RADIAN
     };
   }
 
@@ -324,9 +310,8 @@ export class WindLayer {
     };
   }
 
-  private updateViewerParameters(): void {
-    this.viewerParameters.sceneMode = this.scene.mode;
-    const dataBounds = Rectangle.fromDegrees(this.windData.bounds.west, this.windData.bounds.south, this.windData.bounds.east, this.windData.bounds.north);
+  private checkBounds(): void {
+    const dataBounds = this.windData.bounds;
 
     if(this.options.displayBounds) {
       if(!Rectangle.union(dataBounds, this.options.displayBounds).equals(dataBounds)) {
@@ -334,13 +319,6 @@ export class WindLayer {
         this.updateOptions({...this.options, displayBounds: dataBounds})
       }
     }
-
-    this.viewerParameters = {
-      sceneMode: this.scene.mode,
-      dataBounds: dataBounds
-    }
-
-    this.particleSystem?.applyViewerParameters(this.viewerParameters);
   }
 
 
@@ -353,7 +331,7 @@ export class WindLayer {
     if (this._isDestroyed) return;
     this.windData = this.processWindData(data);
     this.particleSystem.computing.updateWindData(this.windData);
-    this.updateViewerParameters()
+    this.checkBounds()
     this.viewer.scene.requestRender();
     // Dispatch data change event
     this.dispatchEvent('dataChange', this.windData);
@@ -378,14 +356,8 @@ export class WindLayer {
    */
   zoomTo(duration: number = 0): void {
     if (this.windData.bounds) {
-      const rectangle = Rectangle.fromDegrees(
-        this.windData.bounds.west,
-        this.windData.bounds.south,
-        this.windData.bounds.east,
-        this.windData.bounds.north
-      );
       this.viewer.camera.flyTo({
-        destination: rectangle,
+        destination: this.windData.bounds,
         duration,
       });
     }

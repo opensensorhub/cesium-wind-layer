@@ -7,7 +7,6 @@ import FramebufferSlice from './FramebufferSlice';
 export class WindParticlesComputing {
   context: any;
   options: WindLayerOptions;
-  viewerParameters: any;
   windTextures!: {
     UV: Texture;
   };
@@ -29,10 +28,9 @@ export class WindParticlesComputing {
   computeEngine: ComputeEngine
   deltaTime: number
 
-  constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, viewerParameters: any, scene: any) {
+  constructor(context: any, windData: Required<WindData>, options: WindLayerOptions, scene: any) {
     this.context = context;
     this.options = options;
-    this.viewerParameters = viewerParameters;
     this.windData = windData;
     this.computeEngine = new ComputeEngine(context);
     this.deltaTime = 0;
@@ -197,14 +195,20 @@ export class WindParticlesComputing {
         commandType: 'Compute',
         uniformMap: {
           UV: () => this.windTextures.UV,
-          speedRange: () => new Cartesian2(this.windData.speed.min, this.windData.speed.max),
+          speedMin: () => this.windData.speed.min,
+          speedMax: () => this.windData.speed.max,
           speedScaleFactor: () => 1000 * this.options.speedFactor,
-          dimension: () => new Cartesian2(this.windData.width, this.windData.height),
-          minimum: () => new Cartesian2(this.windData.bounds.west, this.windData.bounds.south),
-          maximum: () => new Cartesian2(this.windData.bounds.east, this.windData.bounds.north),
+          width: () => this.windData.width,
+          height: () => this.windData.height,
+          minLat: () => this.windData.bounds.south,
+          maxLat: () => this.windData.bounds.north,
+          minLon: () => this.windData.bounds.west,
+          maxLon: () => this.windData.bounds.east,
           prevParticlesPosition: () => this.particlesTextures.prevParticlePositions,
-          lonRange: () =>  new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.west : this.viewerParameters.dataBounds.west), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.east : this.viewerParameters.dataBounds.east)),
-          latRange: () => new Cartesian2(CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.south : this.viewerParameters.dataBounds.south), CesiumMath.toDegrees(this.options.displayBounds ? this.options.displayBounds.north : this.viewerParameters.dataBounds.north)),
+          minDisplayLon: () => this.options.displayBounds ? this.options.displayBounds.west : this.windData.bounds.west,
+          minDisplayLat: () => this.options.displayBounds ? this.options.displayBounds.south : this.windData.bounds.south,
+          maxDisplayLon: () => this.options.displayBounds ? this.options.displayBounds.east : this.windData.bounds.east,
+          maxDisplayLat: () => this.options.displayBounds ? this.options.displayBounds.north : this.windData.bounds.north,
           randomCoefficient: () => Math.random(),
           deltaTime: () => this.deltaTime,
           maxParticleTTL: () => this.options.maxParticleTTL,

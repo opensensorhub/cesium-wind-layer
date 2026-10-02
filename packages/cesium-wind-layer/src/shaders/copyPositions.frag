@@ -44,8 +44,8 @@ void main() {
 
     vec4 position = texture(currentParticlePositions, v_textureCoordinates).rgba;
 
-    float lon = radians(position.x);
-    float lat = radians(position.y);
+    float lon = position.x;
+    float lat = position.y;
 
     float sinLon = sin(lon);
     float cosLon = cos(lon);
