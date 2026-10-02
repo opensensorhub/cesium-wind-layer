@@ -1,6 +1,7 @@
 #version 300 es
 precision highp float;
 precision highp sampler3D;
+precision highp sampler2D;
 
 uniform sampler2D currentParticlePositions;
 uniform float particleHeight;
