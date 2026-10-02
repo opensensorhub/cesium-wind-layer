@@ -169,7 +169,7 @@ export default class CustomPrimitive {
     }
   }
 
-  execute(context: any, passState?: PassState, computeEngine?: ComputeEngine) {
+  execute(context: any, pass?: ComputeEngine|PassState) {
 
     if (!this.show || !this.isDynamic()) {
       return;
@@ -183,20 +183,14 @@ export default class CustomPrimitive {
       this.preExecute();
     }
 
-    if (defined(this.commandToExecute)) {
+    if (defined(this.commandToExecute) && pass) {
       if(this.commandType == "Compute") {
-        if(computeEngine) {
-          (this.commandToExecute as ComputeCommand).execute(computeEngine)
-        } else {
-          console.error('ComputeEngine required')
-        }
+        (this.commandToExecute as ComputeCommand).execute(pass)
       } else {
-        if(passState) {
-          (this.commandToExecute as DrawCommand).execute(context, passState)
-        } else {
-          console.error('PassState required')
-        }
+        (this.commandToExecute as DrawCommand).execute(context, pass)
       }
+    } else {
+      console.error('ComputeEngine or PassState required')
     }
   }
 

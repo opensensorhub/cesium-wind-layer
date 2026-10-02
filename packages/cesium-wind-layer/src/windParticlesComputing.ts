@@ -321,7 +321,7 @@ export class WindParticlesComputing {
 
   execute(deltaTime: number) {
     this.primitives.updatePosition.execute(this.context, this.computeEngine)
-    this.primitives.copyTo3D.execute(this.context, this.computeEngine)
+    this.primitives.copyTo3D.execute(this.context, new PassState(this.context))
     if(this.options.dynamic) {
       this.deltaTime = deltaTime
       this.swapTextures();
