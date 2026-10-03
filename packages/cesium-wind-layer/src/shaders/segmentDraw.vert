@@ -22,8 +22,8 @@ out float alpha;
 
 vec4 calculateOffsetOnNormalDirection(vec3 pointAECEF, vec3 pointBECEF, float widthOffset) {
 
-    vec4 pointA = czm_modelViewProjection * vec4(pointAECEF, 1.0);
-    vec4 pointB = czm_modelViewProjection * vec4(pointBECEF, 1.0);
+  vec4 pointA = czm_modelViewProjection * vec4(pointAECEF, 1.0f);
+  vec4 pointB = czm_modelViewProjection * vec4(pointBECEF, 1.0f);
 
     // create rotation matrices to convert ecef -> enu and vice versa
     // up vector will match vector A in this case
@@ -33,55 +33,59 @@ vec4 calculateOffsetOnNormalDirection(vec3 pointAECEF, vec3 pointBECEF, float wi
 
     //get head and side vector of quad
 
-    vec2 aspectVec2 = vec2(aspect, 1.0);
-    vec2 pointA_XY = (pointA.xy / pointA.w) * aspectVec2;
-    vec2 pointB_XY = (pointB.xy / pointB.w) * aspectVec2;
+  vec2 aspectVec2 = vec2(aspect, 1.0f);
+  vec2 pointA_XY = (pointA.xy / pointA.w) * aspectVec2;
+  vec2 pointB_XY = (pointB.xy / pointB.w) * aspectVec2;
 
-    vec2 direction = normalize(pointB_XY - pointA_XY);
-    vec2 normalVector = vec2(-direction.y, direction.x);
-    normalVector.x = normalVector.x / aspect;
+  vec2 direction = normalize(pointB_XY - pointA_XY);
+  vec2 normalVector = vec2(-direction.y, direction.x);
+  normalVector.x = normalVector.x / aspect;
 
-    return pointA + vec4(10000.0 * normalVector * widthOffset, 0.0, 0.0);
+  return pointA + vec4(10000.0f * normalVector * widthOffset, 0.0f, 0.0f);
 }
 
 vec2 restoreFloatAndBit(float modifiedNumber, uint bitIndex) {
-    uint uModified = floatBitsToUint(modifiedNumber);
-    uint bitState = (uModified >> bitIndex) & 1u;
-    uint uOriginal = uModified & ~(1u << bitIndex);
+  uint uModified = floatBitsToUint(modifiedNumber);
+  uint bitState = (uModified >> bitIndex) & 1u;
+  uint uOriginal = uModified & ~(1u << bitIndex);
 
-    return vec2(float(bitState), uintBitsToFloat(uOriginal));
+  return vec2(float(bitState), uintBitsToFloat(uOriginal));
+}
+
+bool isBehindHorizon(vec3 pointECEF) {
+  //https://math.stackexchange.com/questions/2974280/normal-vector-to-ellisoid-surface
+  vec3 up = normalize(pointECEF * czm_ellipsoidInverseRadii * czm_ellipsoidInverseRadii);
+
+  return dot(czm_viewerPositionWC - pointECEF, up) <= 0.0f;
 }
 
 void main() {
-    int particleTextureSize = textureSize(particlesPosition, 0).x;
-    int segmentStep = gl_VertexID / 2;
-    ivec2 particleIndex = ivec2(gl_InstanceID % particleTextureSize, gl_InstanceID / particleTextureSize);
-    int iNumLayers = int(numLayers);
-    int iCurrentLayer = int(currentLayer);
-    int currentLayerIndex = (iCurrentLayer + segmentStep) % iNumLayers;
-    bool isHead = segmentStep == iNumLayers - 1;
+  int particleTextureSize = textureSize(particlesPosition, 0).x;
+  int segmentStep = gl_VertexID / 2;
+  ivec2 particleIndex = ivec2(gl_InstanceID % particleTextureSize, gl_InstanceID / particleTextureSize);
+  int iNumLayers = int(numLayers);
+  int iCurrentLayer = int(currentLayer);
+  int currentLayerIndex = (iCurrentLayer + segmentStep) % iNumLayers;
+  bool isHead = segmentStep == iNumLayers - 1;
     //if current vertex maps to head of trail, use previous pos
     //this avoids vector pointing to tail
-    int nextLayerIndex = (currentLayerIndex + (isHead ? iNumLayers - 1 : 1)) % iNumLayers;
+  int nextLayerIndex = (currentLayerIndex + (isHead ? iNumLayers - 1 : 1)) % iNumLayers;
 
-    vec4 nextPosition = texelFetch(particlesPosition, ivec3(particleIndex, nextLayerIndex), 0).rgba;
-    vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
-    float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x + restoreFloatAndBit(currentPosition.w, 31u).x;
+  vec4 nextPosition = texelFetch(particlesPosition, ivec3(particleIndex, nextLayerIndex), 0).rgba;
+  vec4 currentPosition = texelFetch(particlesPosition, ivec3(particleIndex, currentLayerIndex), 0).rgba;
+  float isAnyRandomPointUsed = restoreFloatAndBit(nextPosition.w, 31u).x + restoreFloatAndBit(currentPosition.w, 31u).x;
 
-    if(isAnyRandomPointUsed > 0.0) {
-        gl_Position = vec4(0.0, 0.0, 0.0, -1.0);
-    } else {
+  if(isAnyRandomPointUsed > 0.0f || isBehindHorizon(currentPosition.xyz)) {
+    gl_Position = vec4(0.0f, 0.0f, 0.0f, -1.0f);
+  } else {
 
-        speed = restoreFloatAndBit(currentPosition.w, 31u).y;
+    speed = restoreFloatAndBit(currentPosition.w, 31u).y;
 
-        float widthFactor = mix(minLineWidth, maxLineWidth, speed);
+    float widthFactor = mix(minLineWidth, maxLineWidth, speed);
 
-        gl_Position = calculateOffsetOnNormalDirection(
-            currentPosition.xyz, 
-            nextPosition.xyz, 
-            normal * widthFactor * (isHead ? -1.0 : 1.0) //vector direction reversed for head case
-        );
-    }
+    gl_Position = calculateOffsetOnNormalDirection(currentPosition.xyz, nextPosition.xyz, normal * widthFactor * (isHead ? -1.0f : 1.0f) //vector direction reversed for head case
+    );
+  }
 
-    alpha = float(segmentStep) / numLayers;
+  alpha = float(segmentStep) / numLayers;
 }
