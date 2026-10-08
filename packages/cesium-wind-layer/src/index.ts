@@ -326,6 +326,7 @@ export class WindLayer {
   /**
    * Update the wind data of the wind layer.
    * @param {WindData} data - The new wind data to apply.
+   * @param {boolean} clear - If true, will clear all particle positions
    */
   updateWindData(data: WindData, clear: boolean = false): void {
     if (this._isDestroyed) return;
