@@ -52,11 +52,9 @@ vec2 restoreFloatAndBit(float modifiedNumber, uint bitIndex) {
   return vec2(float(bitState), uintBitsToFloat(uOriginal));
 }
 
+//TODO generalize this to handle camera view bounds
 bool isBehindHorizon(vec3 pointECEF) {
-  //https://math.stackexchange.com/questions/2974280/normal-vector-to-ellisoid-surface
-  vec3 up = normalize(pointECEF * czm_ellipsoidInverseRadii * czm_ellipsoidInverseRadii);
-
-  return dot(czm_viewerPositionWC - pointECEF, up) <= 0.0f;
+  return dot(pointECEF, czm_viewerPositionWC) <= 0.0f;
 }
 
 void main() {
