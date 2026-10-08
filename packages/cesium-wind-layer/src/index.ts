@@ -327,10 +327,10 @@ export class WindLayer {
    * Update the wind data of the wind layer.
    * @param {WindData} data - The new wind data to apply.
    */
-  updateWindData(data: WindData): void {
+  updateWindData(data: WindData, clear: boolean = false): void {
     if (this._isDestroyed) return;
     this.windData = this.processWindData(data);
-    this.particleSystem.computing.updateWindData(this.windData);
+    this.particleSystem.computing.updateWindData(this.windData, clear);
     this.checkBounds()
     this.viewer.scene.requestRender();
     // Dispatch data change event

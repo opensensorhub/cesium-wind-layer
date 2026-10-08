@@ -258,9 +258,19 @@ export class WindParticlesComputing {
     this.createWindTextures();
   }
 
-  updateWindData(data: Required<WindData>) {
+  private recreateParticles() {
+    this.destroyParticlesTextures()
+    this.destroyFramebufferSlices()
+    this.createParticlesTextures()
+    this.createFramebufferSlices()
+  }
+
+  updateWindData(data: Required<WindData>, clear: boolean = false) {
     this.windData = data;
     this.reCreateWindTextures();
+    if(clear) {
+      this.recreateParticles()
+    }
   }
 
   updateOptions(options: Partial<WindLayerOptions>) {
@@ -272,10 +282,7 @@ export class WindParticlesComputing {
     }
     
     if(updatedSamples) {
-      this.destroyParticlesTextures()
-      this.destroyFramebufferSlices()
-      this.createParticlesTextures()
-      this.createFramebufferSlices()
+      this.recreateParticles()
     }
   }
 
